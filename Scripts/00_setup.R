@@ -13,6 +13,7 @@ library(SeuratWrappers)
 library(clustree)
 library(Matrix)
 
+# Load the list of Seurat object
 seu <- readRDS("seu_enact_seg_unprocessed.rds")
 
 P1 <- seu[[1]]
@@ -23,6 +24,7 @@ P2.B <- seu[[4]]
 ########################
 # Prompt: choose sample
 ########################
+# Get from the user --> select the dataset
 repeat {
   cat("\nAvailable samples: P1, P1.B, P2, P2.B\n")
   sample_name <- trimws(readline(
@@ -31,3 +33,10 @@ repeat {
   cat("Invalid input '", sample_name, "' — please enter P1, P1.B, P2, or P2.B.\n", sep = "")
 }
 
+obj <- get(sample_name)   # Set it to the obj
+
+# Print the matrix (genes x cells)
+cat("\nLoaded:", sample_name,
+    "| Cells:", ncol(obj),
+    "| Genes:", nrow(obj), "\n")
+cat("Proceed to 01_qc.R\n")
