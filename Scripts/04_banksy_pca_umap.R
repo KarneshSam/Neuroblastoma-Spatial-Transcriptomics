@@ -32,4 +32,9 @@ obj <- FindNeighbors(obj,
                      reduction = "pca.banksy.0.2",
                      dims      = 1:30)
 
-
+# UMAP
+obj <- RunUMAP(obj,
+               reduction      = "pca.banksy.0.2",
+               reduction.name = "umap.banksy.0.2",
+               return.model   = TRUE,
+               dims           = 1:30)
