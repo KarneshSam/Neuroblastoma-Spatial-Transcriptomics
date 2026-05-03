@@ -28,12 +28,13 @@ ggplot(hvf, aes(x = vf_vst_counts_mean,
   scale_color_manual(
     values = c("FALSE" = "blue", "TRUE" = "red"),
     labels = c("FALSE" = "Non-variable", "TRUE" = "Variable")) +
+  scale_x_log10() +
   geom_point(data  = hvf[hvf$gene %in% top10, ],
              color = "black", size = 1.2) +
   geom_text_repel(data  = hvf[hvf$gene %in% top10, ],
                   aes(label = gene), color = "black", size = 2.5) +
   labs(title = paste("Highly variable genes (2,000) —", sample_name),
-       x     = "Mean expression",
+       x     = "Mean expression (log scale)",
        y     = "Standardised variance",
        color = "") +
   theme_classic()
