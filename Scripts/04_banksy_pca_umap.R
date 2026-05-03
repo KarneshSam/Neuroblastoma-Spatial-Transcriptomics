@@ -10,3 +10,15 @@ obj <- RunBanksy(obj,
                  assay_name = "BANKSY.0.2l",
                  k_geom     = 50,
                  assay      = "Spatial.Polygons")
+
+# Set the defaualt to BANKSY assay for further analysis
+DefaultAssay(obj) <- "BANKSY.0.2l"
+
+# PCA
+obj <- RunPCA(obj,
+              assay          = "BANKSY.0.2l",
+              features       = rownames(obj),
+              npcs           = 30,
+              reduction.name = "pca.banksy.0.2")
+
+
