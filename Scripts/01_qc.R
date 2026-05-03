@@ -28,3 +28,15 @@ p3 <- VlnPlot(obj, features = "percent.mt",
                                             face = "bold"))
   )
 
+# Per-gene UMI count distribution
+gene_counts <- rowSums(obj[["Spatial.Polygons"]]$counts)
+
+# Violin Plot
+ggplot(data.frame(gene_counts), aes(x = "", y = gene_counts)) +
+  geom_violin() +
+  ylim(0, 10000) +
+  labs(title = paste("Counts per gene —", sample_name),
+       x = NULL, y = "Counts") +
+  theme_classic()
+
+cat("QC plots done. Inspect, then proceed to 02_filter.R\n")
