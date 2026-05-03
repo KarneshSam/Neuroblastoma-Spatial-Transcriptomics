@@ -38,3 +38,8 @@ obj <- RunUMAP(obj,
                reduction.name = "umap.banksy.0.2",
                return.model   = TRUE,
                dims           = 1:30)
+
+# Save — 05a loads from here
+saveRDS(obj, file = paste0(sample_name, "_post_banksy.rds"))
+cat("Saved:", paste0(sample_name, "_post_banksy.rds"), "\n")
+cat("Proceed to 05a_cluster_clustree.R\n")
