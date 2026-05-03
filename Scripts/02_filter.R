@@ -65,3 +65,9 @@ for (iter in seq_len(max_iter)) {
   }
 }
 
+# Fresh UMI count per cells after filtering 
+obj[["nCount_fresh"]] <- colSums(obj[["Spatial.Polygons"]]$counts)
+
+cat("\nFiltering done:", ncol(obj), "cells |", nrow(obj), "genes\n")
+cat("Proceed to 03_normalise.R\n")
+
