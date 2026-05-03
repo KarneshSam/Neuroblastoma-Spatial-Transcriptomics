@@ -38,3 +38,8 @@ ggplot(hvf, aes(x = vf_vst_counts_mean,
        y     = "Standardised variance",
        color = "") +
   theme_classic()
+
+# Scale — regress out mitochondrial %
+obj <- ScaleData(obj, vars.to.regress = "percent.mt")
+
+cat("Normalisation complete. Proceed to 04_banksy_pca_umap.R\n")
