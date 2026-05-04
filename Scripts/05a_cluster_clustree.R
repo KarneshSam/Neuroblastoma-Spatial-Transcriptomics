@@ -37,3 +37,8 @@ for (res in resolutions) {
 # Clustree
 clustree(obj, prefix = "banksy_lam0.2_res") +
   ggtitle(paste("Clustree —", sample_name))
+
+# Save with cluster columns added
+saveRDS(obj, file = paste0(sample_name, "_post_cluster.rds"))
+cat("\nSaved:", paste0(sample_name, "_post_cluster.rds"), "\n")
+cat("Inspect the clustree, then proceed to 05b_plots.R\n")
