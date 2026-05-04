@@ -33,3 +33,7 @@ for (res in resolutions) {
   cat(sprintf("  res %.2f  ->  %-32s  (%d clusters)\n",
               res, col_name, n_cl))
 }
+
+# Clustree
+clustree(obj, prefix = "banksy_lam0.2_res") +
+  ggtitle(paste("Clustree —", sample_name))
