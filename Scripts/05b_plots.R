@@ -15,3 +15,13 @@ for (i in seq_along(res_cols)) {
   n_cl <- nlevels(obj[[res_cols[i], drop = TRUE]])
   cat(sprintf("  [%d] %-32s  (%d clusters)\n", i, res_cols[i], n_cl))
 }
+
+# Prompt: choose resolution 
+repeat {
+  chosen_res <- trimws(readline(prompt = "\nEnter the resolution column name to use for plots: "))
+  if (chosen_res %in% res_cols) break
+  cat("Invalid '", chosen_res, "' — please enter one of the listed column names.\n", sep = "")
+}
+
+cat("\nUsing:", chosen_res,
+    "| Clusters:", nlevels(obj[[chosen_res, drop = TRUE]]), "\n")
