@@ -35,3 +35,8 @@ DimPlot(obj,
         group.by  = chosen_res,
         label     = TRUE) +
   ggtitle(paste("UMAP —", sample_name, "|", chosen_res))
+
+# Spatial overview 
+ImageDimPlot(obj,
+             group.by = chosen_res) +
+  ggtitle(paste("Spatial —", sample_name, "|", chosen_res))
