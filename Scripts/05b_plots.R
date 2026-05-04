@@ -25,3 +25,13 @@ repeat {
 
 cat("\nUsing:", chosen_res,
     "| Clusters:", nlevels(obj[[chosen_res, drop = TRUE]]), "\n")
+
+# Make the selected resolution to default identity
+Idents(obj) <- chosen_res
+
+# UMAP 
+DimPlot(obj,
+        reduction = "umap.banksy.0.2",
+        group.by  = chosen_res,
+        label     = TRUE) +
+  ggtitle(paste("UMAP —", sample_name, "|", chosen_res))
