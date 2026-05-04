@@ -40,3 +40,11 @@ DimPlot(obj,
 ImageDimPlot(obj,
              group.by = chosen_res) +
   ggtitle(paste("Spatial —", sample_name, "|", chosen_res))
+
+# Spatial split by cluster 
+ImageDimPlot(obj,
+             group.by        = chosen_res,
+             split.by        = chosen_res,
+             dark.background = TRUE,
+             size            = 0.3)
+
