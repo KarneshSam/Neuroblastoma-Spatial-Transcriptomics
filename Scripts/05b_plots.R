@@ -1,12 +1,16 @@
 # 05b_plots.R
+# Purpose : Generate UMAP, spatial, and SNN heatmap plots for the
+#           resolution chosen after inspecting clustree in 05a.
 # Requires: sample_name  (from 00_setup.R)
 # ─────────────────────────────────────────────────────────────────
 
-# Load the clustered dataset
+# Load the clustered dataset (contains different clusters)
 obj <- readRDS(paste0(sample_name, "_post_cluster.rds"))
 cat("Loaded:", paste0(sample_name, "_post_cluster.rds"), "\n")
 
 # Show available resolutions - for the user
+# Finds all resolution columns added by 05a in obj@meta.data
+# Prints each one with its cluster count to help the user decide
 res_cols <- sort(grep("^banksy_lam0.2_res",
                       colnames(obj@meta.data), value = TRUE))
 
@@ -17,6 +21,7 @@ for (i in seq_along(res_cols)) {
 }
 
 # Prompt: choose resolution 
+# Keep asking until a valid column name is entered
 repeat {
   chosen_res <- trimws(readline(prompt = "\nEnter the resolution column name to use for plots: "))
   if (chosen_res %in% res_cols) break
@@ -49,6 +54,9 @@ ImageDimPlot(obj,
              size            = 0.3)
 
 # SNN connectivity heatmap
+# Shows average SNN edge weight between every pair of clusters
+# High values = clusters share many neighbours = potentially similar
+# Helps identify clusters that may be over-split
 banksy_cells    <- Cells(obj[["BANKSY.0.2l"]])                   # Extract the cells
 clusters_banksy <- obj[[chosen_res]][banksy_cells, 1]            # Cluster assignments for those cells
 banksy_snn_mat  <- obj@graphs[["BANKSY.0.2l_snn"]]               # Extract the SNN graph
