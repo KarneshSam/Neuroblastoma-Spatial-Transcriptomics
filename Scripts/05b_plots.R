@@ -48,3 +48,28 @@ ImageDimPlot(obj,
              dark.background = TRUE,
              size            = 0.3)
 
+# SNN connectivity heatmap
+banksy_cells    <- Cells(obj[["BANKSY.0.2l"]])                   # Extract the cells
+clusters_banksy <- obj[[chosen_res]][banksy_cells, 1]            # Cluster assignments for those cells
+banksy_snn_mat  <- obj@graphs[["BANKSY.0.2l_snn"]]               # Extract the SNN graph
+b_levels        <- as.character(sort(unique(clusters_banksy)))   # Cluster levels
+n_cl            <- length(b_levels)
+
+# Initialise empty connectivity matrix
+conn_mat <- matrix(0, nrow = n_cl, ncol = n_cl,
+                   dimnames = list(b_levels, b_levels))
+
+# Generate matrix for each cluster pairs 
+# By having mean value for each cluster pairs
+for (ci in b_levels) {
+  for (cj in b_levels) {
+    cells_i <- banksy_cells[clusters_banksy == ci]
+    cells_j <- banksy_cells[clusters_banksy == cj]
+
+    # Extract submatrix for this cluster pair
+    sub_mat <- as.matrix(banksy_snn_mat[cells_i, cells_j])
+    # Use only non-zeros for mean
+    nz      <- sub_mat[sub_mat > 0]
+    conn_mat[ci, cj] <- if (length(nz) > 0) mean(nz) else 0
+  }
+}
