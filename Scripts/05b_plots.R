@@ -73,3 +73,14 @@ for (ci in b_levels) {
     conn_mat[ci, cj] <- if (length(nz) > 0) mean(nz) else 0
   }
 }
+
+# Plot heatmap - colour: white (low) -> steelblue -> red (high) {relationship} 
+pheatmap(conn_mat,
+         main  = paste("SNN connectivity —",
+                                 sample_name, "|", chosen_res),
+         color = colorRampPalette(
+                             c("white", "steelblue", "red"))(100),
+         display_numbers = TRUE,
+         number_format   = "%.3f")
+
+cat("\nPlots done. Proceed to 06_markers.R\n")
