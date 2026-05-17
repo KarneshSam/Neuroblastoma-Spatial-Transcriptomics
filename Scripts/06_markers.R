@@ -33,3 +33,24 @@ repeat {
 cat("\nUsing:", chosen_res,
     "| Clusters:", nlevels(obj[[chosen_res, drop = TRUE]]), "\n")
 
+# Set default assay and identtity class
+# FindAllMarkers must use the raw/normalised gene expression assay
+# not the BANKSY assay, so we switch back to Spatial.Polygons
+DefaultAssay(obj) <- "Spatial.Polygons"
+Idents(obj) <- chosen_res
+
+################
+# Find Markers
+################
+# Finds genes upregulated in each cluster vs all other clusters
+# only.pos        = TRUE  : only report upregulated markers
+# min.pct         = 0.25  : gene must be detected in >25% of cells
+# logfc.threshold = 0.25  : minimum log2 fold change
+obj@misc[["markers"]] <- FindAllMarkers(
+  obj,
+  assay           = "Spatial.Polygons",
+  group.by        = chosen_res,
+  only.pos        = TRUE,
+  min.pct         = 0.25,
+  logfc.threshold = 0.25)
+
