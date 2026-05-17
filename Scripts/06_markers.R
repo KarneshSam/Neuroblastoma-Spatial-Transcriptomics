@@ -69,4 +69,17 @@ obj@misc[["top10markers"]] <- obj@misc[["markers"]] %>%
 # Print top markers
 print(obj@misc[["top10markers"]])
 
+############
+# DotPlot 
+############
+# Dot size = fraction of cells expressing the gene
+# Dot colour = average expression level
+# Rows = clusters, columns = top marker genes
+DotPlot(obj,
+        features = unique(obj@misc[["top5markers"]]$gene),
+        group.by = chosen_res) +
+  RotatedAxis() +
+  labs(title = paste("Top 5 markers —", sample_name, "|", chosen_res)) +
+  theme(plot.title = element_text(size = 13, hjust = 0.5,
+                                  face = "bold"))
 
