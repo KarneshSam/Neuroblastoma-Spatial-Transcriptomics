@@ -83,3 +83,16 @@ DotPlot(obj,
   theme(plot.title = element_text(size = 13, hjust = 0.5,
                                   face = "bold"))
 
+# Save marker tables as CSV files
+# Full marker table — all significant markers for all clusters
+write.csv(obj@misc[["markers"]],
+          paste0("markers_", sample_name, "_", chosen_res, ".csv"),
+          row.names = TRUE)
+
+# Top 10 marker table — condensed summary
+write.csv(obj@misc[["top10markers"]],
+          paste0("top10markers_", sample_name, "_", chosen_res, ".csv"),
+          row.names = TRUE)
+
+cat("\nDone. Saved marker tables for", sample_name,
+    "at resolution", chosen_res, "\n")
