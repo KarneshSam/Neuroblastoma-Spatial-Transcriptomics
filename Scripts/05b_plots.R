@@ -34,19 +34,30 @@ cat("\nUsing:", chosen_res,
 # Make the selected resolution to default identity
 Idents(obj) <- chosen_res
 
+#######
 # UMAP 
+#######
+# Cells coloured by cluster, labels shown at cluster centroids
 DimPlot(obj,
         reduction = "umap.banksy.0.2",
         group.by  = chosen_res,
         label     = TRUE) +
   ggtitle(paste("UMAP —", sample_name, "|", chosen_res))
 
+###################
 # Spatial overview 
+###################
+# Shows spatial distribution of clusters
+# Useful to see if clusters are spatially coherent or mixed
 ImageDimPlot(obj,
              group.by = chosen_res) +
   ggtitle(paste("Spatial —", sample_name, "|", chosen_res))
 
+###########################
 # Spatial split by cluster 
+###########################
+# Shows spatial distribution of each cluster separately
+# Useful to see if clusters have distinct spatial patterns
 ImageDimPlot(obj,
              group.by        = chosen_res,
              split.by        = chosen_res,

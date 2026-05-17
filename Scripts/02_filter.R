@@ -1,21 +1,24 @@
 # 02_filter.R
+# Purpose : Filter the Seurat object based on QC metrics.
+# Output  : Filtered Seurat object with improved data quality.
 # Requires: obj, sample_name  (from 01_qc.R)
 # ─────────────────────────────────────────────────────────────────
 
-# Parameters
-min_features   <- 50
-min_bins       <- 3
-max_mt         <- 25
-min_gene_count <- 50
-max_iter       <- 10
+#####################
+# Filter thresholds
+#####################
+# Adjust these based on QC plots from 01_qc.R
+min_features   <- 50    # Minimum unique genes per cell
+min_bins       <- 3     # Minimum unique spatial bins per cell
+max_mt         <- 25    # Maximum mitochondrial % per cell
+min_gene_count <- 50    # Minimum total counts per gene across all cells
+max_iter       <- 10    # Safety cap on iterations
 
-# Filtering based on
-# No of Features
-# No of bins
-# Mitochondrial percentage
-# Counts per gene
+cat("\nIterative filtering —", sample_name, "\n")
+
 for (iter in seq_len(max_iter)) {
-
+  
+  # Record counts before round of filtering
   n_cells_before <- ncol(obj)
   n_genes_before <- nrow(obj)
 
@@ -34,16 +37,17 @@ for (iter in seq_len(max_iter)) {
     Matrix::rowSums(obj[["Spatial.Polygons"]]$counts) > min_gene_count]
   obj <- subset(obj, features = keep_genes)
   
-  # After filtering
+  # Record counts after filtering
   n_cells_after <- ncol(obj)
   n_genes_after <- nrow(obj)
 
-  # Report each round
+  # Report for each round
   cat("Round", iter, "→",
       "Cells:", n_cells_before, "→", n_cells_after,
       "| Genes:", n_genes_before, "→", n_genes_after, "\n")
   
-  # Stop conditions
+  # Convergence check: 
+  # if no more cells or genes are being filtered out, stop
   if (n_cells_before == n_cells_after &
       n_genes_before == n_genes_after) {
     cat("Converged at round", iter, "\n")
@@ -51,6 +55,7 @@ for (iter in seq_len(max_iter)) {
   }
   
   # Max iteration check
+  # If still changing after max_iter rounds, warn and stop
   if (iter == max_iter) {
     cat("Warning: max iterations reached — check thresholds\n")
     break
@@ -65,7 +70,7 @@ for (iter in seq_len(max_iter)) {
   }
 }
 
-# Fresh UMI count per cells after filtering 
+# Recompute new UMI count per cells after filtering 
 obj[["nCount_fresh"]] <- colSums(obj[["Spatial.Polygons"]]$counts)
 
 cat("\nFiltering done:", ncol(obj), "cells |", nrow(obj), "genes\n")

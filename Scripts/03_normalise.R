@@ -1,26 +1,41 @@
 # 03_normalise.R
+# Purpose : Normalise counts, identify highly variable genes (HVGs),
+#           and scale the data while regressing out mitochondrial %.
 # Requires: obj, sample_name  (from 02_filter.R)
 # ─────────────────────────────────────────────────────────────────
 
+# Set default assay
 DefaultAssay(obj) <- "Spatial.Polygons"
 
 # Normalise
+# LogNormalize: divides each cell's counts by total counts,
+# multiplies by scale factor, then log1p transforms
 obj <- NormalizeData(obj,
                      normalization.method = "LogNormalize",
                      scale.factor         = 10000)
 
 # Highly variable genes
-# Compute top 2000 variable genes
+# VST method models mean-variance relationship and selects
+# Top 2000 variable genes
 obj <- FindVariableFeatures(obj,
                             selection.method = "vst",
                             nfeatures        = 2000)
 
-# HVG scatter plot
+##################
+# Visualise HVGs
+##################
+# Visualise mean expression vs standardised variance
+
+# Extract HVG metadata from the assay
 hvf          <- obj[["Spatial.Polygons"]]@meta.data
+# Add gene names and variable gene status for plotting
 hvf$gene     <- rownames(obj[["Spatial.Polygons"]])
 hvf$variable <- hvf$gene %in% VariableFeatures(obj)
+# Get top 10 HVGs for labelling
 top10        <- head(VariableFeatures(obj), 10)
 
+# Red = selected variable genes, Blue = non-variable
+# Top 10 HVGs are labelled by name
 ggplot(hvf, aes(x = vf_vst_counts_mean,
                 y = vf_vst_counts_variance.expected,
                 color = variable)) +
