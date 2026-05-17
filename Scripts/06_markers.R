@@ -54,3 +54,19 @@ obj@misc[["markers"]] <- FindAllMarkers(
   min.pct         = 0.25,
   logfc.threshold = 0.25)
 
+#################
+# Top 10 Markers
+#################
+# Filtered to significant markers only (adjusted p < 0.05)
+# Then top 10 by average log2 fold change per cluster
+obj@misc[["top10markers"]] <- obj@misc[["markers"]] %>%
+  filter(p_val_adj < 0.05) %>%
+  group_by(cluster) %>%
+  top_n(n = 10, wt = avg_log2FC) %>%
+  arrange(cluster, desc(avg_log2FC)) %>%
+  as.data.frame()
+
+# Print top markers
+print(obj@misc[["top10markers"]])
+
+
