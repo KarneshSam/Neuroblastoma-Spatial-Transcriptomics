@@ -96,3 +96,21 @@ write.csv(obj@misc[["top10markers"]],
 
 cat("\nDone. Saved marker tables for", sample_name,
     "at resolution", chosen_res, "\n")
+
+#################################
+# Drop Unused Resolution Columns
+#################################
+# Removes all other resolution columns to keep the object clean
+# Only the chosen resolution is kept for downstream use
+cols_to_remove <- res_cols[res_cols != chosen_res]
+
+obj@meta.data <- obj@meta.data[
+  , !colnames(obj@meta.data) %in% cols_to_remove, drop = FALSE]
+
+cat("Removed columns:", paste(cols_to_remove, collapse = ", "), "\n")
+cat("Kept:", chosen_res, "\n")
+
+# Save the final object
+saveRDS(obj, file = paste0(sample_name, "_final_", chosen_res, ".rds"))
+cat("Saved:", paste0(sample_name, "_final_", chosen_res, ".rds"), "\n")
+cat("Proceed to 07_annotation.R\n")
