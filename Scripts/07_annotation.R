@@ -50,8 +50,18 @@ for (cl in cluster_ids) {
     # Unique valid label — accept and move on
     break
   }
-  
+
   # Store label with cluster ID as name
   cell_type_labels <- c(cell_type_labels, label)
   names(cell_type_labels)[length(cell_type_labels)] <- cl
 }
+
+# Assign annotations to seurat object
+# Maps each cluster ID to its cell type label in a new metadata column
+obj[["cell_type"]] <- cell_type_labels[
+  as.character(obj[[chosen_res, drop = TRUE]])]
+
+# Cell type summary
+cat("\nAnnotation summary:\n")
+print(table(obj[["cell_type"]]))
+
