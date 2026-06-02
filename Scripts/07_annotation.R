@@ -32,7 +32,25 @@ for (cl in cluster_ids) {
       cat("  Label cannot be empty. Please enter a cell type name.\n")
       next
     }
+
+    # Duplicate label — warn which cluster already has it and confirm
+    # Same cell type in multiple clusters is biologically valid
+    # but we ask to confirm it is intentional and not a typo
+    if (label %in% cell_type_labels) {
+      already_in <- names(cell_type_labels)[cell_type_labels == label]
+      cat("  Note: '", label, "' is already assigned to cluster(s): ",
+          paste(already_in, collapse = ", "), "", sep = "")
+      cat("  Same cell type in multiple clusters is valid — confirm?\n")
+      confirm <- trimws(readline(
+        prompt = "  Enter 'yes' to confirm, anything else to re-enter: "))
+      if (tolower(confirm) == "yes") break
+      next
+    }
+
+    # Unique valid label — accept and move on
+    break
   }
+  
   # Store label with cluster ID as name
   cell_type_labels <- c(cell_type_labels, label)
   names(cell_type_labels)[length(cell_type_labels)] <- cl
