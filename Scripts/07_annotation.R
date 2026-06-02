@@ -1,3 +1,12 @@
+# 07_annotation.R
+# Purpose : Manually annotate clusters based on marker genes from
+#           06_markers.R. Prompts for a cell type label per cluster,
+#           handles duplicate labels with confirmation, adds a
+#           cell_type column, generates labelled plots, and saves
+#           the annotated object.
+# Requires: sample_name  (from 00_setup.R)
+# ─────────────────────────────────────────────────────────────────
+
 # Load final object 
 obj <- readRDS(paste0(sample_name, "_final_", chosen_res, ".rds"))
 cat("Loaded:", paste0(sample_name, "_final_", chosen_res, ".rds"), "\n")
