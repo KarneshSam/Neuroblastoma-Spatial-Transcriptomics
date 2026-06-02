@@ -65,3 +65,35 @@ obj[["cell_type"]] <- cell_type_labels[
 cat("\nAnnotation summary:\n")
 print(table(obj[["cell_type"]]))
 
+#############################
+# UMAP labelled by cell type 
+#############################
+# repel = TRUE prevents overlapping labels on crowded UMAPs
+DimPlot(obj,
+        reduction = "umap.banksy.0.2",
+        group.by  = "cell_type",
+        label     = TRUE,
+        repel     = TRUE) +
+  ggtitle(paste("UMAP — cell types |", sample_name)) +
+
+
+# Spatial plot labelled by cell type 
+# Shows annotated cell types in their original tissue coordinates
+ImageDimPlot(obj,
+             group.by = "cell_type") +
+  ggtitle(paste("Spatial — cell types |", sample_name))
+
+# Spatial split by cell type 
+# Each cell type shown in its own panel on the tissue section
+ImageDimPlot(obj,
+             group.by        = "cell_type",
+             split.by        = "cell_type",
+             dark.background = TRUE,
+             size            = 0.3)
+
+# Save annotated object
+# Final object with cell_type column added to meta.data
+saveRDS(obj, file = paste0(sample_name, "_annotated_", chosen_res, ".rds"))
+cat("Saved:", paste0(sample_name, "_annotated_", chosen_res, ".rds"), "\n")
+
+cat("\nPipeline complete for", sample_name, "")
