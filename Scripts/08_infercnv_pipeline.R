@@ -227,3 +227,18 @@ cat("Counts matrix dimensions:",
     nrow(counts_filt), "genes x",
     ncol(counts_filt), "cells\n")
 
+#########################
+# Create InferCNV object
+#########################
+# ref_group_names: normal cell types 
+# min_max_counts_per_cell = c(0, Inf): include all cells 
+# since filtering was already done upstream in the Seurat pipeline
+infercnv_obj <- CreateInfercnvObject(
+  raw_counts_matrix       = counts_filt,
+  annotations_file        = ann_file,
+  delim                   = "\t",
+  gene_order_file         = gene_order_path,
+  ref_group_names         = normal_types,
+  min_max_counts_per_cell = c(0, Inf)
+)
+
