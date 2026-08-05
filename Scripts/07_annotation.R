@@ -67,12 +67,12 @@ for (cl in cluster_ids) {
 
 # Assign annotations to seurat object
 # Maps each cluster ID to its cell type label in a new metadata column
-obj[["cell_type"]] <- cell_type_labels[
+obj[["cell_type_hr"]] <- cell_type_labels[
   as.character(obj[[chosen_res, drop = TRUE]])]
 
 # Cell type summary
 cat("\nAnnotation summary:\n")
-print(table(obj[["cell_type"]]))
+print(table(obj[["cell_type_hr"]]))
 
 #############################
 # UMAP labelled by cell type 
@@ -80,7 +80,7 @@ print(table(obj[["cell_type"]]))
 # repel = TRUE prevents overlapping labels on crowded UMAPs
 DimPlot(obj,
         reduction = "umap.banksy.0.2",
-        group.by  = "cell_type",
+        group.by  = "cell_type_hr",
         label     = TRUE,
         repel     = TRUE) +
   ggtitle(paste("UMAP — cell types |", sample_name)) +
@@ -89,14 +89,14 @@ DimPlot(obj,
 # Spatial plot labelled by cell type 
 # Shows annotated cell types in their original tissue coordinates
 ImageDimPlot(obj,
-             group.by = "cell_type") +
+             group.by = "cell_type_hr") +
   ggtitle(paste("Spatial — cell types |", sample_name))
 
 # Spatial split by cell type 
 # Each cell type shown in its own panel on the tissue section
 ImageDimPlot(obj,
-             group.by        = "cell_type",
-             split.by        = "cell_type",
+             group.by        = "cell_type_hr",
+             split.by        = "cell_type_hr",
              dark.background = TRUE,
              size            = 0.3)
 
