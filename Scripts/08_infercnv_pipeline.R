@@ -11,7 +11,7 @@ rds_obj <- readRDS("seu_enact_seg_unprocessed.rds")
 # Case 2: named or unnamed list of Seurat objects of any length
 if (inherits(rds_obj, "Seurat")) {
   cat("Detected: single Seurat object\n")
-  sample_list <- list(S1 = rds_obj)
+  sample_list <- list(S1 = rds_obj)          # assign a name S1 to the single object for downstream use
 
 } 
 else if (is.list(rds_obj) &&
@@ -24,7 +24,7 @@ else if (is.list(rds_obj) &&
     cat("No names found — assigned:",
         paste(names(rds_obj), collapse = ", "), "\n")
   }
-  sample_list <- rds_obj
+  sample_list <- rds_obj               # assign the list to sample_list for downstream use
 
 } 
 else {
@@ -37,3 +37,14 @@ for (nm in names(sample_list)) {
   cat(sprintf("  %-6s | Cells: %d | Genes: %d\n",
               nm, ncol(sample_list[[nm]]), nrow(sample_list[[nm]])))
 }
+
+# Prompt: choose sample 
+# Provide the available sample names to the user and ask which one to run InferCNV on
+repeat {
+  cat("\nAvailable samples:", paste(names(sample_list), collapse = ", "), "\n")
+  sample_name <- trimws(readline(prompt = "Which sample to run InferCNV on? "))
+  if (sample_name %in% names(sample_list)) break
+  cat("Invalid '", sample_name,
+      "' — please enter one of the listed names.\n", sep = "")
+}
+
