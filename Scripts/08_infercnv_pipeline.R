@@ -239,6 +239,23 @@ infercnv_obj <- CreateInfercnvObject(
   delim                   = "\t",
   gene_order_file         = gene_order_path,
   ref_group_names         = normal_types,
-  min_max_counts_per_cell = c(0, Inf)
-)
+  min_max_counts_per_cell = c(0, Inf))
+
+# Check mean expression per gene
+# Helps choose a sensible cutoff value for infercnv::run
+# cutoff removes lowly expressed genes before CNV inference
+expr_means <- rowMeans(infercnv_obj@expr.data)
+
+cat("\nMean expression per gene summary:\n")
+print(summary(expr_means))
+
+cat("\nGenes above cutoff thresholds:\n")
+# Select a range of cutoff values to show how many genes would be included at each threshold
+for (thresh in c(0.01, 0.05, 0.1, 0.2, 0.5)) {
+  n_genes <- sum(expr_means >= thresh)
+  cat(sprintf("  cutoff >= %.2f  ->  %d genes (%.1f%%)\n",
+              thresh,
+              n_genes,
+              n_genes / length(expr_means) * 100))
+}
 
