@@ -3,7 +3,9 @@ library(infercnv)
 library(rtracklayer)
 library(dplyr)
 
+##################################
 # Load the list of Seurat object
+##################################
 rds_obj <- readRDS("seu_enact_seg_unprocessed.rds")
 
 # Setup: The file can be a single Seurat object or a list of Seurat objects of any length
@@ -38,7 +40,9 @@ for (nm in names(sample_list)) {
               nm, ncol(sample_list[[nm]]), nrow(sample_list[[nm]])))
 }
 
+#########################
 # Prompt: choose sample 
+#########################
 # Provide the available sample names to the user and ask which one to run InferCNV on
 repeat {
   cat("\nAvailable samples:", paste(names(sample_list), collapse = ", "), "\n")
@@ -48,3 +52,37 @@ repeat {
       "' — please enter one of the listed names.\n", sep = "")
 }
 
+# Load that Seurat object into the obj variable
+obj <- sample_list[[sample_name]]
+cat("\nLoaded:", sample_name,
+    "| Cells:", ncol(obj),
+    "| Genes:", nrow(obj), "\n")
+
+# Show available cell types
+all_cell_types <- sort(unique(obj$cell_type_hr))
+cat("\nCell types available in", sample_name, ":\n")
+for (i in seq_along(all_cell_types)) {
+  cat(sprintf("  [%d] %s\n", i, all_cell_types[i]))
+}
+
+# Prompt: tumour cell types 
+# These are the populations InferCNV will test for CNV signal
+repeat {
+  cat("\nEnter tumour cell type names, comma-separated.\n")
+  cat("These will be tested for CNV signal.\n")
+  tumour_input <- trimws(readline(prompt = "Tumour types: "))
+  tumour_types <- trimws(strsplit(tumour_input, ",")[[1]])
+  tumour_types <- tumour_types[nzchar(tumour_types)]
+
+  # If any of the entered names are not found in the object, warn and re-ask 
+  invalid <- tumour_types[!tumour_types %in% all_cell_types]
+  if (length(tumour_types) == 0) {
+    cat("Please enter at least one cell type.\n"); next
+  }
+  if (length(invalid) > 0) {
+    cat("Not found in object:", paste(invalid, collapse = ", "), "\n")
+    cat("Please enter names exactly as listed above.\n"); next
+  }
+  break
+}
+cat("Tumour types:", paste(tumour_types, collapse = ", "), "\n")
