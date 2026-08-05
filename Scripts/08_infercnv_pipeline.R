@@ -136,3 +136,52 @@ repeat {
 }
 cat("Normal types:", paste(normal_types, collapse = ", "), "\n")
 
+#####################################
+# Generate gene order file from GTF
+#####################################
+# Gene order must match the genes actually present in the object
+# so it is generated fresh per sample rather than using a static file
+# Only standard chromosomes (chr1-22, X, Y) are kept
+# Duplicate gene names are removed keeping the first genomic occurrence
+cat("\nImporting GTF file — this may take a moment...\n")
+gtf <- import("gencode.v44.basic.annotation.gtf.gz")
+
+cat("Building gene order file for", sample_name, "...\n")
+genes_df <- as.data.frame(gtf) |>
+  # Keep gene-level entries only (not transcript, exon etc.)
+  dplyr::filter(type == "gene") |>
+  # Select only the columns InferCNV needs: name, chr, start, end
+  dplyr::select(gene_name, seqnames, start, end) |>
+  # Keep only standard chromosomes
+  dplyr::filter(seqnames %in% paste0("chr", c(1:22, "X", "Y"))) |>
+  # Keep only genes present in the Seurat object
+  dplyr::filter(gene_name %in% rownames(obj)) |>
+  # Sort by chromosome then position for correct CNV ordering
+  dplyr::arrange(seqnames, start) |>
+  # Remove duplicate gene names — keep first genomic occurrence
+  dplyr::distinct(gene_name, .keep_all = TRUE)
+
+# Summary check
+cat("Genes in object:", nrow(obj), "\n")
+cat("Genes matched in GTF:", nrow(genes_df), "\n")
+cat("Genes not found in GTF:",
+    length(setdiff(rownames(obj), genes_df$gene_name)), "\n")
+
+# Write gene order file to output directory
+gene_order_path <- file.path(out_dir, "gene_order_file.txt")
+write.table(genes_df,
+            file      = gene_order_path,
+            sep       = "\t",
+            quote     = FALSE,
+            row.names = FALSE,
+            col.names = FALSE)
+
+# Verify no duplicates — should always be 0 after distinct()
+gene_order_check <- read.table(gene_order_path, sep = "\t")
+n_dups <- sum(duplicated(gene_order_check$V1))
+if (n_dups > 0) {
+  warning("Duplicate gene names found in gene order file: ", n_dups)
+} else {
+  cat("Gene order file verified — no duplicates\n")
+}
+cat("Gene order file saved:", gene_order_path, "\n")
