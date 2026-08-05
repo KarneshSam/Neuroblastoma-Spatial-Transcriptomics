@@ -185,3 +185,45 @@ if (n_dups > 0) {
   cat("Gene order file verified — no duplicates\n")
 }
 cat("Gene order file saved:", gene_order_path, "\n")
+
+###############################
+# Prepare InferCNV input files
+###############################
+# Get raw counts
+# InferCNV requires raw integer counts, not normalised values
+counts_mat <- GetAssayData(obj,
+                           assay = "Spatial.Polygons",
+                           layer = "counts")
+
+# Build cell annotation data frame
+# Two columns: cell barcode and cell type label
+# Only tumour and normal cells are kept 
+cell_ann <- data.frame(
+  cell_barcode = colnames(counts_mat),
+  cell_type    = obj$cell_type_hr[
+    match(colnames(counts_mat), colnames(obj))])
+
+# Filter to tumour and normal cells only
+cell_ann_filt <- cell_ann[
+  cell_ann$cell_type_hr %in% c(tumour_types, normal_types), ]
+
+# Write annotation file 
+# InferCNV reads annotations from a tab-separated text file
+ann_file <- file.path(out_dir, "cell_annotations.txt")
+write.table(cell_ann_filt,
+            file      = ann_file,
+            sep       = "\t",
+            quote     = FALSE,
+            row.names = FALSE,
+            col.names = FALSE)
+cat("Annotation file written:", ann_file, "\n")
+
+# Subset counts to annotated cells only 
+# Removes any cells not in the filtered annotation table
+counts_filt <- counts_mat[,
+                          cell_ann_filt$cell_barcode]
+
+cat("Counts matrix dimensions:",
+    nrow(counts_filt), "genes x",
+    ncol(counts_filt), "cells\n")
+
