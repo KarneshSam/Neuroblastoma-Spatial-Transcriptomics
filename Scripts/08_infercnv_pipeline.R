@@ -259,3 +259,35 @@ for (thresh in c(0.01, 0.05, 0.1, 0.2, 0.5)) {
               n_genes / length(expr_means) * 100))
 }
 
+#########################
+# Prompt: choose cutoff 
+#########################
+# Inspect the summary above, then enter your cutoff
+# Typical range is 0.01 to 0.1 for spatial/single-cell data
+repeat {
+  cutoff_input <- trimws(readline(
+    prompt = "\nEnter cutoff value for InferCNV (e.g. 0.01): "))
+  cutoff_val   <- suppressWarnings(as.numeric(cutoff_input))
+
+  if (is.na(cutoff_val) || cutoff_val < 0) {
+    cat("Invalid — please enter a positive number (e.g. 0.01).\n")
+    next
+  }
+
+  # Warn if cutoff seems unusually high — could remove too many genes
+  n_kept <- sum(expr_means >= cutoff_val)
+  cat(sprintf("  Cutoff %.4f -> %d genes kept (%.1f%%)\n",
+              cutoff_val,
+              n_kept,
+              n_kept / length(expr_means) * 100))
+
+  if (n_kept < 1000) {
+    cat("  Warning: fewer than 1000 genes kept — cutoff may be too high.\n")
+    confirm <- trimws(readline(
+      prompt = "  Enter 'yes' to proceed anyway, anything else to re-enter: "))
+    if (tolower(confirm) != "yes") next
+  }
+  break
+}
+
+cat("Using cutoff:", cutoff_val, "\n")
