@@ -291,3 +291,26 @@ repeat {
 }
 
 cat("Using cutoff:", cutoff_val, "\n")
+
+###############
+# Run InferCNV
+###############
+# cutoff            = cutoff_val: user-chosen minimum mean expression
+# cluster_by_groups = TRUE      : cluster tumour and normal separately
+# denoise           = TRUE      : apply noise reduction to CNV signal
+# HMM               = TRUE      : use HMM to call discrete CNV states
+# BayesMaxPNormal   = 0         : no Bayesian filtering of normal signal
+# num_threads       = 25       : parallel threads — adjust to your system
+cat("\nRunning InferCNV for", sample_name, "...\n")
+
+infercnv_obj <- infercnv::run(
+  infercnv_obj,
+  cutoff            = cutoff_val,
+  out_dir           = out_dir,
+  cluster_by_groups = TRUE,
+  denoise           = TRUE,
+  HMM               = TRUE,
+  BayesMaxPNormal   = 0,
+  num_threads       = 25)
+
+cat("\nDone. Results saved to:", out_dir, "\n")
