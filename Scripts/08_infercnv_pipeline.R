@@ -40,6 +40,22 @@ for (nm in names(sample_list)) {
               nm, ncol(sample_list[[nm]]), nrow(sample_list[[nm]])))
 }
 
+# Prompt: output directory 
+# All InferCNV outputs including gene order file go here
+repeat {
+  out_dir <- trimws(readline(prompt = "\nEnter output directory name: "))
+  if (nchar(out_dir) == 0) {
+    cat("Output directory cannot be empty.\n"); next
+  }
+  break
+}
+
+# Create output directory if it does not exist
+if (!dir.exists(out_dir)) {
+  dir.create(out_dir, recursive = TRUE)
+  cat("Created output directory:", out_dir, "\n")
+}
+
 #########################
 # Prompt: choose sample 
 #########################
