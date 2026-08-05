@@ -65,7 +65,9 @@ for (i in seq_along(all_cell_types)) {
   cat(sprintf("  [%d] %s\n", i, all_cell_types[i]))
 }
 
+#############################
 # Prompt: tumour cell types 
+##############################
 # These are the populations InferCNV will test for CNV signal
 repeat {
   cat("\nEnter tumour cell type names, comma-separated.\n")
@@ -86,3 +88,35 @@ repeat {
   break
 }
 cat("Tumour types:", paste(tumour_types, collapse = ", "), "\n")
+
+######################################
+# Prompt: normal reference cell types
+######################################
+# Used as the reference baseline for CNV inference
+repeat {
+  cat("\nEnter normal reference cell type names, comma-separated.\n")
+  cat("These will be used as the diploid reference baseline.\n")
+  normal_input <- trimws(readline(prompt = "Normal types: "))
+  normal_types <- trimws(strsplit(normal_input, ",")[[1]])
+  normal_types <- normal_types[nzchar(normal_types)]
+
+  invalid <- normal_types[!normal_types %in% all_cell_types]
+  if (length(normal_types) == 0) {
+    cat("Please enter at least one cell type.\n"); next
+  }
+  if (length(invalid) > 0) {
+    cat("Not found in object:", paste(invalid, collapse = ", "), "\n")
+    cat("Please enter names exactly as listed above.\n"); next
+  }
+
+  # Warn if any normal type overlaps with tumour types
+  overlap <- intersect(tumour_types, normal_types)
+  if (length(overlap) > 0) {
+    cat("Warning: these types appear in both tumour and normal:",
+        paste(overlap, collapse = ", "), "\n")
+    cat("This will cause issues. Please re-enter normal types.\n"); next
+  }
+  break
+}
+cat("Normal types:", paste(normal_types, collapse = ", "), "\n")
+
