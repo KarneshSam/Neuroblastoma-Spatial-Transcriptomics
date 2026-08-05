@@ -1,3 +1,10 @@
+# infercnv_pipeline.R
+# Purpose : Generate gene order file from GTF, then run InferCNV
+#           on a cell-annotated Seurat object.
+#           Prompts the user for all inputs interactively.
+# Requires: A cell-annotated RDS file (output of 07_annotation.R)
+#           and a Gencode GTF file (.gtf or .gtf.gz)
+# ─────────────────────────────────────────────────────────────────
 library(Seurat)
 library(infercnv)
 library(rtracklayer)
