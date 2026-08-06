@@ -120,3 +120,37 @@ repeat {
 normal_pattern <- paste0("^(", paste(normal_prefixes, collapse = "|"), ")")
 cat("Normal subclone pattern:", normal_pattern, "\n")
 
+#####################
+# InferCNV analysis
+#####################
+# Load final InferCNV object from the specified directory
+# Contains the CNV expression matrix (genes x cells)
+infercnv_rds <- file.path(infercnv_dir, "run.final.infercnv_obj")
+if (!file.exists(infercnv_rds)) {
+  stop("run.final.infercnv_obj not found in: ", infercnv_dir)
+}
+
+cat("\nLoading InferCNV object...\n")
+infercnv_obj <- readRDS(infercnv_rds)
+
+# CNV score per cell
+# Variance of CNV score across genes per cell
+# Higher variance = more CNV events = more aneuploid
+# Neutral (diploid) cells have CNV values close to 1 = low variance
+cnv_mat   <- infercnv_obj@expr.data
+
+cat("CNV matrix dimensions:", nrow(cnv_mat), "genes x",
+    ncol(cnv_mat), "cells\n")
+# Compute CNV score for each cell based on the variance
+cnv_score <- apply(cnv_mat, 2, var)
+
+# Assign CNV scores back to Seurat object
+# Only cells in the Infercnv object will have a score
+# Cells not in InferCNV (e.g. filtered out) get NA
+cells_in_infercnv     <- names(cnv_score)
+obj$cnv_score         <- NA
+obj$cnv_score[match(cells_in_infercnv, colnames(obj))] <- cnv_score
+
+cat("CNV scores assigned to", sum(!is.na(obj$cnv_score)), "cells\n")
+
+
