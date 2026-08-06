@@ -227,7 +227,7 @@ if (!file.exists(cnv_regions_file)) {
 cnv_regions <- read.table(cnv_regions_file, header = TRUE, sep = "\t")
 cat("\nCNV regions loaded:", nrow(cnv_regions), "rows\n")
 
-# ── Filter to tumour subclones only ──────────────────────────────
+# Filter to tumour subclones only
 # Keep only rows where subclone name starts with tumour prefix
 cnv_regions_tumour <- cnv_regions[
   grepl(paste0("^", tumour_prefix), cnv_regions$cell_group_name), ]
@@ -238,5 +238,33 @@ cat("Tumour subclones found:", n_subclones, "\n")
 if (n_subclones == 0) {
   stop("No subclones found with prefix '", tumour_prefix,
        "' — check tumour prefix.")
+}
+
+########################################
+# CNV state per subclone per chromosome
+########################################
+# Summarise dominant CNV state per subclone per chromosome
+# Excludes neutral state (3) before finding dominant state
+# Dominant state = most frequent non-neutral state in that chromosome
+chr_summary <- cnv_regions_tumour %>%
+  filter(state != 3) %>%
+  group_by(cell_group_name, chr) %>%
+  summarise(
+    dominant_state = as.character(names(which.max(table(state)))),
+    .groups = "drop"
+  )
+
+cat("\nChromosome summary dimensions:",
+    nrow(chr_summary), "rows\n")
+
+# Verify one row per subclone + chromosome combination
+dups <- chr_summary %>%
+  count(cell_group_name, chr) %>%
+  filter(n > 1)
+if (nrow(dups) > 0) {
+  warning("Duplicate subclone + chromosome combinations found: ",
+          nrow(dups))
+} else {
+  cat("Verified: no duplicate subclone + chromosome combinations\n")
 }
 
