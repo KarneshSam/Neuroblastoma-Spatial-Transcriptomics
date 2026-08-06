@@ -198,3 +198,45 @@ obj$infercnv_subclone <- ifelse(
 cat("\nSubclone distribution:\n")
 print(table(obj$infercnv_subclone, useNA = "ifany"))
 
+################
+# HMM CNV genes
+################
+# Contains per-gene CNV predictions per subclone
+cnv_genes_file <- file.path(infercnv_dir,
+  paste0(hmm_prefix, ".pred_cnv_genes.dat"))
+
+if (!file.exists(cnv_genes_file)) {
+  stop("CNV genes file not found: ", cnv_genes_file)
+}
+
+cnv_genes <- read.table(cnv_genes_file, header = TRUE, sep = "\t")
+cat("CNV genes table loaded:", nrow(cnv_genes), "rows\n")
+
+#############################
+# CNV regions - Gain or Loss
+#############################
+# Contains per-region CNV state predictions per subclone
+# State 3 = neutral (diploid), <3 = loss, >3 = gain
+cnv_regions_file <- file.path(infercnv_dir,
+  paste0(hmm_prefix, ".pred_cnv_regions.dat"))
+
+if (!file.exists(cnv_regions_file)) {
+  stop("CNV regions file not found: ", cnv_regions_file)
+}
+
+cnv_regions <- read.table(cnv_regions_file, header = TRUE, sep = "\t")
+cat("\nCNV regions loaded:", nrow(cnv_regions), "rows\n")
+
+# ── Filter to tumour subclones only ──────────────────────────────
+# Keep only rows where subclone name starts with tumour prefix
+cnv_regions_tumour <- cnv_regions[
+  grepl(paste0("^", tumour_prefix), cnv_regions$cell_group_name), ]
+
+n_subclones <- length(unique(cnv_regions_tumour$cell_group_name))
+cat("Tumour subclones found:", n_subclones, "\n")
+
+if (n_subclones == 0) {
+  stop("No subclones found with prefix '", tumour_prefix,
+       "' — check tumour prefix.")
+}
+
