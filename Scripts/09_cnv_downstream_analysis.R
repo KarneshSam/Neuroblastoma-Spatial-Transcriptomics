@@ -268,3 +268,36 @@ if (nrow(dups) > 0) {
   cat("Verified: no duplicate subclone + chromosome combinations\n")
 }
 
+# Pivot to wide matrix
+# Rows = subclones, columns = chromosomes
+# Missing = neutral (state 3, filled as "3")
+chr_wide <- chr_summary %>%
+  pivot_wider(
+    names_from  = chr,
+    values_from = dominant_state,
+    values_fill = "3")
+
+# Order columns by genomic position
+# chr1 -> chr22 -> chrX — standard genomic order
+chr_order <- paste0("chr", c(1:22, "X"))
+chr_order <- chr_order[chr_order %in% colnames(chr_wide)]
+
+# Convert to numeric matrix
+# pheatmap requires a numeric matrix
+chr_mat <- chr_wide %>%
+  column_to_rownames("cell_group_name") %>%
+  dplyr::select(all_of(chr_order)) %>%
+  mutate(across(everything(), as.numeric)) %>%
+  as.matrix()
+
+cat("CNV matrix:", nrow(chr_mat), "subclones x",
+    ncol(chr_mat), "chromosomes\n")
+
+# Row annotation: NE subtype
+# Extracts the cell type prefix from subclone name
+# e.g. NE1.NE1_s1       NE1
+#      NE1.NE1_s10      NE1
+#      ....             ..
+row_ann_chr <- data.frame(
+  NE_type   = gsub("\\..*", "", rownames(chr_mat)),
+  row.names = rownames(chr_mat))
