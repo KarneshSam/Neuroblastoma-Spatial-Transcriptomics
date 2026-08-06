@@ -268,6 +268,9 @@ if (nrow(dups) > 0) {
   cat("Verified: no duplicate subclone + chromosome combinations\n")
 }
 
+#################################
+# Chromosome matrix for heatmap
+#################################
 # Pivot to wide matrix
 # Rows = subclones, columns = chromosomes
 # Missing = neutral (state 3, filled as "3")
@@ -301,3 +304,33 @@ cat("CNV matrix:", nrow(chr_mat), "subclones x",
 row_ann_chr <- data.frame(
   NE_type   = gsub("\\..*", "", rownames(chr_mat)),
   row.names = rownames(chr_mat))
+
+# NE subtype colours — generated dynamically
+# Extract unique NE subtypes present in this sample's subclones
+# Handles any number of NE types — not hardcoded to 8
+ne_types <- sort(unique(row_ann_chr$NE_type))
+cat("NE subtypes found:", paste(ne_types, collapse = ", "), "\n")
+
+# Generate a colour palette scaled to however many NE types exist
+# RColorBrewer "Set1" up to 9, beyond that use colorRampPalette
+if (length(ne_types) <= 9) {
+  ne_palette <- RColorBrewer::brewer.pal(
+    n    = max(length(ne_types), 3),  # brewer.pal needs at least 3
+    name = "Set1"
+  )[seq_along(ne_types)]
+} else {
+  # More than 9 types — interpolate a larger palette
+  ne_palette <- colorRampPalette(
+    RColorBrewer::brewer.pal(9, "Set1")
+  )(length(ne_types))
+}
+
+# Name the palette by NE type
+names(ne_palette) <- ne_types
+
+ne_colors <- list(NE_type = ne_palette)
+
+cat("Colours assigned:\n")
+for (nm in names(ne_palette)) {
+  cat(sprintf("  %-6s -> %s\n", nm, ne_palette[nm]))
+}
