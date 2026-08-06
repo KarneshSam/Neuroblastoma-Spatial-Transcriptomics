@@ -46,3 +46,77 @@ repeat {
       "' — please enter one of the listed names.\n", sep = "")
 }
 
+obj <- sample_list[[sample_name]]
+cat("\nLoaded:", sample_name,
+    "| Cells:", ncol(obj),
+    "| Genes:", nrow(obj), "\n")
+
+#####################################
+# Prompt: InferCNV output directory
+#####################################
+# Directory containing the InferCNV run outputs
+# Should contain run.final.infercnv_obj and HMM output files
+repeat {
+  infercnv_dir <- trimws(readline(
+    prompt = "\nEnter InferCNV output directory path: "))
+  if (nchar(infercnv_dir) == 0) {
+    cat("Path cannot be empty.\n"); next
+  }
+  if (!dir.exists(infercnv_dir)) {
+    cat("Directory not found: '", infercnv_dir,
+        "' — please check the path.\n", sep = ""); next
+  }
+  break
+}
+
+# Prompt: plot output directory
+# Where all plots from this script will be saved
+repeat {
+  plot_dir <- trimws(readline(
+    prompt = "\nEnter directory to save plots: "))
+  if (nchar(plot_dir) == 0) {
+    cat("Path cannot be empty.\n"); next
+  }
+  break
+}
+
+# Create plot directory if it does not exist
+if (!dir.exists(plot_dir)) {
+  dir.create(plot_dir, recursive = TRUE)
+  cat("Created plot directory:", plot_dir, "\n")
+}
+
+##############################################
+# Prompt: Tumour & Normal cell type prefixes
+##############################################
+# Used to filter CNV regions to tumour subclones only
+# e.g. "NE" to keep NE1, NE2, NE3 etc.
+repeat {
+  tumour_prefix <- trimws(readline(
+    prompt = "\nEnter tumour subclone prefix to filter CNV regions (e.g. NE): "))
+  if (nchar(tumour_prefix) == 0) {
+    cat("Prefix cannot be empty.\n"); next
+  }
+  break
+}
+
+# The Infercnv produce subclone names with prefixes for normal cell types too
+# These prefixes will be simplified to just the cell type name 
+# e.g. "Plasma,Endo,VSMCs,TAM1,TAM2" -> kept the first part alone "."
+repeat {
+  cat("\nEnter normal cell type prefixes to simplify subclone names.\n")
+  cat("Comma-separated (e.g. Plasma,Endo,VSMCs,TAM1,TAM2)\n")
+  normal_input   <- trimws(readline(prompt = "Normal prefixes: "))
+  normal_prefixes <- trimws(strsplit(normal_input, ",")[[1]])
+  normal_prefixes <- normal_prefixes[nzchar(normal_prefixes)]
+  if (length(normal_prefixes) == 0) {
+    cat("Please enter at least one prefix.\n"); next
+  }
+  break
+}
+
+# Build regex pattern from the normal cell type prefixes
+# e.g. c("Plasma","Endo") -> "^(Plasma|Endo)"
+normal_pattern <- paste0("^(", paste(normal_prefixes, collapse = "|"), ")")
+cat("Normal subclone pattern:", normal_pattern, "\n")
+
