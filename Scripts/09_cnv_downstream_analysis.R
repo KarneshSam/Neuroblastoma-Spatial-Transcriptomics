@@ -153,4 +153,48 @@ obj$cnv_score[match(cells_in_infercnv, colnames(obj))] <- cnv_score
 
 cat("CNV scores assigned to", sum(!is.na(obj$cnv_score)), "cells\n")
 
+#############################
+# HMM subcluster assignments
+##############################
+# Maps each cell barcode to its InferCNV subclone assignment
+hmm_prefix    <- "17_HMM_predHMMi6.leiden.hmm_mode-subclusters"
+groupings_file <- file.path(infercnv_dir,
+  paste0(hmm_prefix, ".cell_groupings"))
+
+if (!file.exists(groupings_file)) {
+  stop("Cell groupings file not found: ", groupings_file)
+}
+
+cell_groupings <- read.table(groupings_file,
+                             header    = TRUE,
+                             sep       = "\t",
+                             col.names = c("subcluster", "cell_barcode"))
+                    
+cat("\nCell groupings loaded:", nrow(cell_groupings), "cells\n")
+cat("Unique subclones:", length(unique(cell_groupings$subcluster)), "\n")
+
+# Assign subclone labels to Seurat object 
+# Initialise as NA then fill from cell_groupings
+obj$infercnv_subclone <- NA
+obj$infercnv_subclone[
+  match(cell_groupings$cell_barcode, colnames(obj))
+] <- as.character(cell_groupings$subcluster)
+
+# Simplify normal subclone names
+# Normal cells get long subclone names like "Endo.s1.c2"
+# Simplify to just the cell type prefix e.g. "Endo"
+obj$infercnv_subclone <- ifelse(
+  grepl(normal_pattern, obj$infercnv_subclone),
+  str_extract(obj$infercnv_subclone, "^[^.]+"),
+  obj$infercnv_subclone)
+
+# Fill NA with the cell type label
+# Cells not in InferCNV keep their annotated cell type names
+obj$infercnv_subclone <- ifelse(
+  is.na(obj$infercnv_subclone),
+  as.character(obj$cell_type),
+  obj$infercnv_subclone)
+
+cat("\nSubclone distribution:\n")
+print(table(obj$infercnv_subclone, useNA = "ifany"))
 
