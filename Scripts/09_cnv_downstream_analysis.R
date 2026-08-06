@@ -334,3 +334,39 @@ cat("Colours assigned:\n")
 for (nm in names(ne_palette)) {
   cat(sprintf("  %-6s -> %s\n", nm, ne_palette[nm]))
 }
+
+# CNV state colours: blue (loss) -> white (neutral) -> red (gain)
+# States 1-6: 1=deep loss, 2=loss, 3=neutral, 4=gain, 5=amp, 6=high amp
+cnv_colors <- colorRampPalette(c(
+  "#2166AC",   # state 1 — deep loss
+  "#92C5DE",   # state 2 — loss
+  "white",     # state 3 — neutral
+  "#F4A582",   # state 4 — gain
+  "#D6604D",   # state 5 — amplification
+  "#B2182B"    # state 6 — high amplification
+))(6)
+
+###############################
+# Plot: CNV landscape heatmap
+###############################
+# Rows = tumour subclones, columns = chromosomes
+# Colour = dominant CNV state per chromosome per subclone
+cnv_heatmap_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_landscape_heatmap.pdf"))
+
+pdf(cnv_heatmap_path, width = 14, height = 8)
+
+pheatmap(chr_mat,
+         color             = cnv_colors,
+         breaks            = c(0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5),
+         annotation_row    = row_ann_chr,
+         annotation_colors = ne_colors,
+         cluster_rows      = TRUE,
+         cluster_cols      = FALSE,
+         show_rownames     = FALSE,
+         fontsize_col      = 8,
+         main              = paste("CNV landscape per subclone —",
+                                   sample_name),
+         border_color      = NA)
+dev.off()
+cat("Saved:", cnv_heatmap_path, "\n")
