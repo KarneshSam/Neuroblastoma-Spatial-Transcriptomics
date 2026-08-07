@@ -194,6 +194,7 @@ cat("Chromosome CNV state columns added to metadata\n")
 
 # Validate chr columns added
 # Keep only chr columns that are actually in meta.data
+chr_cols <- paste0("chr", 1:22)
 chr_cols_valid <- chr_cols[chr_cols %in% colnames(obj@meta.data)]
 cat("Valid chromosome columns:", length(chr_cols_valid), "\n")
 
@@ -259,5 +260,55 @@ chr_bar_path <- file.path(plot_dir,
   paste0(sample_name, "_cnv_chr_state_barplot.pdf"))
 ggsave(chr_bar_path, p_chr_bar, width = 16, height = 10)
 cat("Saved:", chr_bar_path, "\n")
+
+###############################################
+# Add arm-level cnv metadata to Seurat object
+###############################################
+# Convert arm_wide to dataframe
+# arm_wide was saved as a CSV with cell_group_name as a column
+# Convert back to matrix format for joining
+arm_wide_df <- as.data.frame(arm_wide)
+
+# Get arm columns
+arm_cols <- colnames(arm_wide_df)
+
+# Build cell-level arm metadata
+# Same approach as chromosome-level — join by subclone name
+# NE cells with no assignment get state "3" (neutral)
+cell_cnv_arm_meta <- cell_groupings %>%
+  left_join(
+    arm_wide_df %>% rownames_to_column("cell_group_name"),
+    by = c("subcluster" = "cell_group_name")) %>%
+  mutate(across(
+    all_of(arm_cols),
+    ~ ifelse(grepl(paste0("^", tumour_prefix), subcluster) &
+               is.na(.x), "3", .x)
+  ))
+
+# Create cell barcode indexed dataframe
+arm_meta              <- cell_cnv_arm_meta[, c("cell_barcode", arm_cols)]
+rownames(arm_meta)    <- arm_meta$cell_barcode
+arm_meta$cell_barcode <- NULL
+
+cat("\nArm metadata dimensions:", nrow(arm_meta), "cells x",
+    ncol(arm_meta), "arms\n")
+
+# Create full matrix aligned to all Seurat cells
+full_arm_meta <- matrix(
+  NA,
+  nrow     = ncol(obj),
+  ncol     = length(arm_cols),
+  dimnames = list(colnames(obj), arm_cols)
+)
+
+matched_cells                  <- intersect(rownames(arm_meta), colnames(obj))
+full_arm_meta[matched_cells, ] <- as.matrix(arm_meta[matched_cells, ])
+full_arm_meta_df               <- as.data.frame(full_arm_meta)
+
+cat("Matched cells for arm metadata:", length(matched_cells), "\n")
+
+# Add arm CNV columns to Seurat object
+obj <- AddMetaData(obj, metadata = full_arm_meta_df)
+cat("Arm CNV state columns added to metadata\n")
 
 
