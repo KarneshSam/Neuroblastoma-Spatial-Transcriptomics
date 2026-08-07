@@ -384,5 +384,17 @@ spatial_subclone_path <- file.path(plot_dir,
 ggsave(spatial_subclone_path, p_spatial_subclone, width = 9, height = 7)
 cat("Saved:", spatial_subclone_path, "\n")
 
+# ── Save chr_wide table ───────────────────────────────────────────
+# Wide matrix of dominant CNV state per subclone per chromosome
+# Rows = subclones, columns = chromosomes, values = CNV state
+chr_wide_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_chr_wide.csv"))
+
+write.csv(chr_wide,
+          file      = chr_wide_path,
+          row.names = FALSE)
+
+cat("Saved:", chr_wide_path, "\n")
+
 cat("\nAll plots saved to:", plot_dir, "\n")
 cat("CNV analysis complete for", sample_name, "\n")
