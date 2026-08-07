@@ -1,3 +1,11 @@
+# 09_cnv_analysis.R
+# Purpose : Compute CNV scores from InferCNV output, extract
+#           subclone assignments, summarise CNV states at both
+#           chromosome and arm level, save all plots and tables.
+# Requires: sample_name  (from 00_setup.R)
+#           Cell-annotated Seurat RDS and InferCNV output directory
+# ─────────────────────────────────────────────────────────────────
+
 library(Seurat)
 library(dplyr)
 library(tidyr)
