@@ -396,5 +396,13 @@ write.csv(chr_wide,
 
 cat("Saved:", chr_wide_path, "\n")
 
+# Save updated Seurat object
+# Saves obj with two new metadata columns added by this script:
+#   - cnv_score          : per-cell CNV variance score
+#   - infercnv_subclone  : subclone assignment from InferCNV HMM
+saveRDS(obj,
+        file = paste0(sample_name, "_post_cnv.rds"))
+cat("Saved:", paste0(sample_name, "_post_cnv.rds"), "\n")
+
 cat("\nAll plots saved to:", plot_dir, "\n")
 cat("CNV analysis complete for", sample_name, "\n")
