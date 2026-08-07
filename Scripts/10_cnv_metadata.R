@@ -516,3 +516,20 @@ pheatmap(score_wide,
          border_color    = "grey90")
 dev.off()
 cat("Saved:", classic_heatmap_path, "\n")
+
+#######################
+# Save Seurat object
+########################
+# Update and save Seurat object
+# Object now contains:
+#   - cnv_score          : per-cell CNV variance score
+#   - infercnv_subclone  : subclone assignment from InferCNV HMM
+#   - chr1 ... chr22     : per-cell chromosome-level CNV state
+#   - chr1p, chr1q ...   : per-cell arm-level CNV state
+obj <- UpdateSeuratObject(obj)
+
+out_rds <- paste0(sample_name, "_post_cnv_meta.rds")
+saveRDS(obj, file = out_rds)
+cat("Saved:", out_rds, "\n")
+
+
