@@ -478,6 +478,55 @@ arm_wide_path <- file.path(plot_dir,
 write.csv(arm_mat, file = arm_wide_path, row.names = FALSE)
 cat("Saved:", arm_wide_path, "\n")
 
+# Row annotation: tumour subtype
+# Extracts subtype prefix from subclone name e.g. "NE1.s1.c2" -> "NE1"
+row_ann_arm <- data.frame(
+  NE_type   = gsub("\\..*", "", rownames(arm_mat)),
+  row.names = rownames(arm_mat)
+)
+
+# NE subtype colours — generated dynamically
+# Reads actual subtypes in arm matrix — may differ from chr matrix
+ne_types_arm <- sort(unique(row_ann_arm$NE_type))
+cat("Tumour subtypes in arm matrix:",
+    paste(ne_types_arm, collapse = ", "), "\n")
+
+if (length(ne_types_arm) <= 9) {
+  ne_palette_arm <- RColorBrewer::brewer.pal(
+    n    = max(length(ne_types_arm), 3),
+    name = "Set1"
+  )[seq_along(ne_types_arm)]
+} else {
+  ne_palette_arm <- colorRampPalette(
+    RColorBrewer::brewer.pal(9, "Set1")
+  )(length(ne_types_arm))
+}
+
+names(ne_palette_arm) <- ne_types_arm
+ne_colors_arm <- list(NE_type = ne_palette_arm)
+
+# Plot: arm-level CNV landscape heatmap
+# Finer resolution than chromosome-level
+# Each column is one chromosome arm (p or q)
+# Helps identify focal events e.g. 17p loss vs 17q gain
+arm_heatmap_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_arm_landscape_heatmap.pdf"))
+
+pdf(arm_heatmap_path, width = 16, height = 8)
+pheatmap(arm_mat,
+         color             = cnv_colors,
+         breaks            = c(0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5),
+         annotation_row    = row_ann_arm,
+         annotation_colors = ne_colors_arm,
+         cluster_rows      = TRUE,
+         cluster_cols      = FALSE,
+         show_rownames     = FALSE,
+         fontsize_col      = 7,
+         main              = paste("CNV landscape per subclone — arm level |",
+                                   sample_name),
+         border_color      = NA)
+dev.off()
+cat("Saved:", arm_heatmap_path, "\n")
 
 # Plot: subclone labels in tissue space 
 # Shows spatial distribution of InferCNV subclones on tissue section
