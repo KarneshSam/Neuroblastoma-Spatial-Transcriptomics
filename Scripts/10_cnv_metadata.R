@@ -532,4 +532,18 @@ out_rds <- paste0(sample_name, "_post_cnv_meta.rds")
 saveRDS(obj, file = out_rds)
 cat("Saved:", out_rds, "\n")
 
+# Subset to NE cells only
+# Creates a separate object containing only tumour (NE) cells
+ne_cells <- subset(obj,
+                   cell_type_hr %in% tumour_types)
+
+cat("NE cells subset:", ncol(ne_cells), "cells |",
+    nrow(ne_cells), "genes\n")
+
+# Save NE cells subset
+ne_rds <- paste0(sample_name, "_ne_cells.rds")
+saveRDS(ne_cells, file = ne_rds)
+cat("Saved:", ne_rds, "\n")
+
+cat("Pipeline complete for", sample_name, "\n")
 
