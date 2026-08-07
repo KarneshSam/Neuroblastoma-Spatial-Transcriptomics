@@ -435,3 +435,62 @@ pheatmap(score_wide_all,
 dev.off()
 cat("Saved:", all_arms_heatmap_path, "\n")
 
+###########################################
+# Cnv directionality heatmap — classic arms
+###########################################
+# Prompt: classic arms of interest 
+# User defines which arms to highlight in the focused heatmap
+# Default suggestion covers common neuroblastoma-relevant arms
+cat("\nEnter chromosome arms of interest for the focused heatmap.\n")
+cat("Comma-separated (e.g. chr1p,chr1q,chr2p,chr11q,chr17p,chr17q)\n")
+cat("Available arms:", paste(all_arm_cols, collapse = ", "), "\n")
+
+repeat {
+  classic_input <- trimws(readline(prompt = "Classic arms: "))
+  classic_arms  <- trimws(strsplit(classic_input, ",")[[1]])
+  classic_arms  <- classic_arms[nzchar(classic_arms)]
+
+  if (length(classic_arms) == 0) {
+    cat("Please enter at least one arm.\n"); next
+  }
+
+  # Validate all entered arms exist in the data
+  invalid <- classic_arms[!classic_arms %in% all_arm_cols]
+  if (length(invalid) > 0) {
+    cat("Not found:", paste(invalid, collapse = ", "),
+        "— please enter arms from the list above.\n"); next
+  }
+  break
+}
+
+cat("Classic arms:", paste(classic_arms, collapse = ", "), "\n")
+
+# Compute directionality score for classic arms only
+direction_score <- obj@meta.data %>%
+  filter(cell_type_hr %in% tumour_types) %>%
+  pivot_longer(cols      = all_of(classic_arms),
+               names_to  = "chr_arm",
+               values_to = "state") %>%
+  filter(!is.na(state)) %>%
+  mutate(state = as.numeric(state)) %>%
+  group_by(cell_type_hr, chr_arm) %>%
+  summarise(
+    score = round(
+      mean(state %in% c(4, 5, 6)) -
+        mean(state %in% c(1, 2)),
+      3),
+    .groups = "drop"
+  )
+
+# Pivot to wide matrix
+score_wide <- direction_score %>%
+  pivot_wider(names_from  = chr_arm,
+              values_from = score) %>%
+  column_to_rownames("cell_type_hr") %>%
+  as.matrix()
+
+# Order rows by tumour subtype and columns as entered
+score_wide <- score_wide[tumour_types,
+  classic_arms[classic_arms %in% colnames(score_wide)]
+]
+
