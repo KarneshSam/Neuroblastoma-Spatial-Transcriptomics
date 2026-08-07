@@ -143,3 +143,58 @@ cell_groupings <- read.table(groupings_file,
 
 cat("Cell groupings loaded:", nrow(cell_groupings), "cells\n")
 
+###############################################
+# Add chr-level cnv metadata to Seurat object
+###############################################
+# Convert chr_wide to dataframe
+chr_wide_df <- as.data.frame(chr_wide)
+
+# Get chromosome columns — everything except the subclone name column
+chr_cols <- colnames(chr_wide_df)[colnames(chr_wide_df) != "cell_group_name"]
+
+# Build cell-level metadata from subclone assignments 
+# Join chr_wide onto cell_groupings by subclone name
+# Each cell inherits the CNV state of its subclone 
+# NE cells with no subclone assignment get state "3" (neutral)
+cell_cnv_meta <- cell_groupings %>%
+  left_join(chr_wide_df, by = c("subcluster" = "cell_group_name")) %>%
+  mutate(across(
+    all_of(chr_cols),
+    ~ ifelse(grepl(paste0("^", tumour_prefix), subcluster) &
+               is.na(.x), "3", .x)
+  ))
+
+# Create cell barcode indexed dataframe 
+chr_meta     <- cell_cnv_meta[, c("cell_barcode", chr_cols)]
+rownames(chr_meta)    <- chr_meta$cell_barcode
+chr_meta$cell_barcode <- NULL
+
+cat("\nChr metadata dimensions:", nrow(chr_meta), "cells x",
+    ncol(chr_meta), "chromosomes\n")
+
+# Create full matrix aligned to all Seurat cells
+# Initialise with NA for every cell — cells not in InferCNV stay NA
+full_meta <- matrix(
+  NA,
+  nrow     = ncol(obj),
+  ncol     = length(chr_cols),
+  dimnames = list(colnames(obj), chr_cols)
+)
+
+# Fill in only matched cells
+matched_cells               <- intersect(rownames(chr_meta), colnames(obj))
+full_meta[matched_cells, ]  <- as.matrix(chr_meta[matched_cells, ])
+full_meta_df                <- as.data.frame(full_meta)
+
+cat("Matched cells for chr metadata:", length(matched_cells), "\n")
+
+# Add chromosome CNV columns to Seurat object
+obj <- AddMetaData(obj, metadata = full_meta_df)
+cat("Chromosome CNV state columns added to metadata\n")
+
+# Validate chr columns added
+# Keep only chr columns that are actually in meta.data
+chr_cols_valid <- chr_cols[chr_cols %in% colnames(obj@meta.data)]
+cat("Valid chromosome columns:", length(chr_cols_valid), "\n")
+
+
