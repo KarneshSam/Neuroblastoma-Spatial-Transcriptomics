@@ -399,10 +399,7 @@ direction_score_all <- obj@meta.data %>%
     .groups = "drop"
   )
 
-# Pivot to wide matrix
-arm_order_all <- paste0("chr", rep(1:22, each = 2), c("p", "q"))
-arm_order_all <- arm_order_all[arm_order_all %in% all_arm_cols]
-
+# Pivot to wide
 score_wide_all <- direction_score_all %>%
   pivot_wider(names_from  = chr_arm,
               values_from = score) %>%
@@ -410,9 +407,31 @@ score_wide_all <- direction_score_all %>%
   as.matrix()
 
 # Order rows by tumour subtype and columns genomically
-score_wide_all <- score_wide_all[
-  tumour_types[tumour_types %in% rownames(score_wide_all)],
-  arm_order_all[arm_order_all %in% colnames(score_wide_all)]
-]
+arm_order_all <- paste0("chr", rep(1:22, each = 2), c("p", "q"))
+arm_order_all <- arm_order_all[arm_order_all %in% colnames(score_wide_all)]
 
+score_wide_all <- score_wide_all[tumour_types, arm_order_all]
+
+# Plot: directionality heatmap — all arms
+all_arms_heatmap_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_directionality_all_arms.pdf"))
+ 
+pdf(all_arms_heatmap_path, width = 16, height = 6)
+pheatmap(score_wide_all,
+         color           = colorRampPalette(
+                             c("#2166AC", "white", "#B2182B"))(100),
+         breaks          = seq(-1, 1, length.out = 101),
+         cluster_rows    = TRUE,
+         cluster_cols    = FALSE,
+         display_numbers = TRUE,
+         number_format   = "%.2f",
+         fontsize_number = 7,
+         fontsize_row    = 12,
+         fontsize_col    = 8,
+         main            = paste("CNV directionality score — all arms |",
+                                 sample_name,
+                                 "\n(+1 = all gain, -1 = all loss, 0 = neutral/mixed)"),
+         border_color    = "grey90")
+dev.off()
+cat("Saved:", all_arms_heatmap_path, "\n")
 
