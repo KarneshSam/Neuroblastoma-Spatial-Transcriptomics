@@ -203,11 +203,11 @@ cat("Valid chromosome columns:", length(chr_cols_valid), "\n")
 # Filtered to tumour cells only
 state_prop_all <- lapply(chr_cols_valid, function(chr) {
   obj@meta.data %>%
-    filter(cell_type %in% tumour_types) %>%
+    filter(cell_type_hr %in% tumour_types) %>%
     filter(!is.na(.data[[chr]])) %>%
-    group_by(cell_type, state = .data[[chr]]) %>%
+    group_by(cell_type_hr, state = .data[[chr]]) %>%
     summarise(n = n(), .groups = "drop") %>%
-    group_by(cell_type) %>%
+    group_by(cell_type_hr) %>%
     mutate(prop       = round(n / sum(n), 3),
            chromosome = chr) %>%
     ungroup()
@@ -218,7 +218,7 @@ for (chr in chr_cols_valid) {
   cat("\n===", chr, "===\n")
   state_prop_all %>%
     filter(chromosome == chr) %>%
-    arrange(cell_type, state) %>%
+    arrange(cell_type_hr, state) %>%
     print(n = Inf)
 }
 
@@ -230,9 +230,9 @@ p_chr_bar <- state_prop_all %>%
     state      = factor(state, levels = c("1","2","3","4","5","6")),
     chromosome = factor(chromosome,
                         levels = paste0("chr", c(1:22, "X"))),
-    cell_type  = factor(cell_type, levels = tumour_types)
+    cell_type_hr  = factor(cell_type_hr, levels = tumour_types)
   ) %>%
-  ggplot(aes(x = cell_type, y = prop, fill = state)) +
+  ggplot(aes(x = cell_type_hr, y = prop, fill = state)) +
   geom_bar(stat = "identity", position = "stack") +
   facet_wrap(~ chromosome, ncol = 6) +
   scale_fill_manual(
@@ -319,11 +319,11 @@ cat("Valid arm columns:", length(arm_cols_valid), "\n")
 # Build proportion table for all arms 
 arm_prop_all <- lapply(arm_cols_valid, function(arm) {
   obj@meta.data %>%
-    filter(cell_type %in% tumour_types) %>%
+    filter(cell_type_hr %in% tumour_types) %>%
     filter(!is.na(.data[[arm]])) %>%
-    group_by(cell_type, state = .data[[arm]]) %>%
+    group_by(cell_type_hr, state = .data[[arm]]) %>%
     summarise(n = n(), .groups = "drop") %>%
-    group_by(cell_type) %>%
+    group_by(cell_type_hr) %>%
     mutate(prop = round(n / sum(n), 3),
            arm  = arm) %>%
     ungroup()
@@ -334,7 +334,7 @@ for (arm in arm_cols_valid) {
   cat("\n===", arm, "===\n")
   arm_prop_all %>%
     filter(arm == !!arm) %>%
-    arrange(cell_type, state) %>%
+    arrange(cell_type_hr, state) %>%
     print(n = Inf)
 }
 
@@ -343,9 +343,9 @@ p_arm_bar <- arm_prop_all %>%
   mutate(
     state     = factor(state, levels = c("1","2","3","4","5","6")),
     arm       = factor(arm, levels = arm_cols_valid),
-    cell_type = factor(cell_type, levels = tumour_types)
+    cell_type_hr = factor(cell_type_hr, levels = tumour_types)
   ) %>%
-  ggplot(aes(x = cell_type, y = prop, fill = state)) +
+  ggplot(aes(x = cell_type_hr, y = prop, fill = state)) +
   geom_bar(stat = "identity", position = "stack") +
   facet_wrap(~ arm, ncol = 6) +
   scale_fill_manual(
@@ -374,5 +374,45 @@ arm_bar_path <- file.path(plot_dir,
 ggsave(arm_bar_path, p_arm_bar, width = 18, height = 12)
 cat("Saved:", arm_bar_path, "\n")
 
+###################################################
+# Compute directionality score per subtype per arm
+###################################################
+# Compute directionality score per subtype per arm
+# Score = proportion of cells with gain - proportion with loss
+# Ranges from -1 (all loss) to +1 (all gain), 0 = neutral or mixed
+all_arm_cols <- paste0("chr", rep(1:22, each = 2), c("p", "q"))
+all_arm_cols <- all_arm_cols[all_arm_cols %in% colnames(obj@meta.data)]
+
+direction_score_all <- obj@meta.data %>%
+  filter(cell_type_hr %in% tumour_types) %>%
+  pivot_longer(cols      = all_of(all_arm_cols),
+               names_to  = "chr_arm",
+               values_to = "state") %>%
+  filter(!is.na(state)) %>%
+  mutate(state = as.numeric(state)) %>%
+  group_by(cell_type_hr, chr_arm) %>%
+  summarise(
+    score = round(
+      mean(state %in% c(4, 5, 6)) -   # proportion gain
+        mean(state %in% c(1, 2)),      # proportion loss
+      3),
+    .groups = "drop"
+  )
+
+# Pivot to wide matrix
+arm_order_all <- paste0("chr", rep(1:22, each = 2), c("p", "q"))
+arm_order_all <- arm_order_all[arm_order_all %in% all_arm_cols]
+
+score_wide_all <- direction_score_all %>%
+  pivot_wider(names_from  = chr_arm,
+              values_from = score) %>%
+  column_to_rownames("cell_type_hr") %>%
+  as.matrix()
+
+# Order rows by tumour subtype and columns genomically
+score_wide_all <- score_wide_all[
+  tumour_types[tumour_types %in% rownames(score_wide_all)],
+  arm_order_all[arm_order_all %in% colnames(score_wide_all)]
+]
 
 
