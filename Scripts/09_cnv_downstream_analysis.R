@@ -280,6 +280,18 @@ chr_wide <- chr_summary %>%
     values_from = dominant_state,
     values_fill = "3")
 
+# Save chr_wide table
+# Wide matrix of dominant CNV state per subclone per chromosome
+# Rows = subclones, columns = chromosomes, values = CNV state
+chr_wide_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_chr_wide.csv"))
+
+write.csv(chr_wide,
+          file      = chr_wide_path,
+          row.names = FALSE)
+
+cat("Saved:", chr_wide_path, "\n")
+
 # Order columns by genomic position
 # chr1 -> chr22 -> chrX — standard genomic order
 chr_order <- paste0("chr", c(1:22, "X"))
@@ -371,6 +383,102 @@ pheatmap(chr_mat,
 dev.off()
 cat("Saved:", cnv_heatmap_path, "\n")
 
+#############################################
+# CNV state per subclone per chromosome arm
+#############################################
+# Centromere positions (hg38)
+# Used to classify each CNV region as p arm, q arm, or spanning both
+# Positions sourced from UCSC hg38 centromere annotations
+centromeres <- data.frame(
+  chr        = paste0("chr", c(1:22, "X", "Y")),
+  centromere = c(
+    123400000, 93900000, 90900000, 50000000, 48800000, 59800000,
+    60100000,  45200000, 43000000, 39800000, 53400000, 35500000,
+    17700000,  17200000, 19000000, 36800000, 25100000, 18500000,
+    26200000,  28100000, 12000000, 15000000, 61000000, 10400000
+  )
+)
+
+# Add arm annotation to tumour CNV subclones
+# Joins centromere positions then classifies each region:
+#   end   <= centromere -> p arm (short arm)
+#   start >= centromere -> q arm (long arm)
+#   spanning both       -> p/q  (dropped below — ambiguous)
+cnv_regions_ne <- cnv_regions_tumour %>%
+  left_join(centromeres, by = "chr") %>%
+  mutate(
+    arm     = case_when(
+      end   <= centromere ~ "p",
+      start >= centromere ~ "q",
+      TRUE                ~ "p/q"
+    ),
+    chr_arm = paste0(chr, arm)
+  )
+
+# Quick check — inspect arm assignments
+cat("\nArm assignment preview:\n")
+print(head(cnv_regions_ne %>%
+             select(cell_group_name, chr, start, end,
+                    state, arm, chr_arm)))
+
+# Summarise dominant CNV state per subclone per arm
+# Same logic as chromosome-level:
+# Excludes neutral (3) then finds most frequent remaining state
+arm_summary <- cnv_regions_ne %>%
+  filter(state != 3) %>%
+  group_by(cell_group_name, chr_arm) %>%
+  summarise(
+    dominant_state = as.character(names(which.max(table(state)))),
+    .groups = "drop"
+  )
+
+cat("Arm summary:", nrow(arm_summary), "rows\n")
+
+# Pivot to wide matrix
+# Rows = subclones, columns = chromosome arms
+# Arms with no non-neutral state filled as "3" (neutral)
+arm_wide <- arm_summary %>%
+  pivot_wider(
+    names_from  = chr_arm,
+    values_from = dominant_state,
+    values_fill = "3")
+
+# Order columns by genomic position
+# chr1p, chr1q, chr2p, chr2q ... chr22p, chr22q, chrXp, chrXq
+arm_order <- paste0("chr", rep(c(1:22, "X"), each = 2), c("p", "q"))
+arm_order <- arm_order[arm_order %in% colnames(arm_wide)]
+
+# Drop any p/q spanning columns — ambiguous, cannot assign to one arm
+other_cols <- colnames(arm_wide)[
+  !colnames(arm_wide) %in% c("cell_group_name", arm_order)]
+if (length(other_cols) > 0) {
+  message("Dropping centromere-spanning columns: ",
+          paste(other_cols, collapse = ", "))
+  arm_wide <- arm_wide %>% select(-all_of(other_cols))
+}
+
+# Convert to numeric matrix 
+arm_mat <- arm_wide %>%
+  column_to_rownames("cell_group_name") %>%
+  select(all_of(arm_order)) %>%
+  mutate(across(everything(), as.numeric)) %>%
+  as.matrix()
+
+# Fill any remaining NAs with 3 (neutral)
+# Can occur if an arm has no CNV regions at all for a subclone
+arm_mat[is.na(arm_mat)] <- 3
+
+cat("Arm matrix:", nrow(arm_mat), "subclones x",
+    ncol(arm_mat), "arms\n")
+
+# Save arm_wide table
+# Wide matrix of dominant CNV state per subclone per chromosome arm
+arm_wide_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_arm_wide.csv"))
+write.csv(arm_mat, file = arm_wide_path, row.names = FALSE)
+cat("Saved:", arm_wide_path, "\n")
+
+
 # Plot: subclone labels in tissue space 
 # Shows spatial distribution of InferCNV subclones on tissue section
 p_spatial_subclone <- ImageDimPlot(obj,
@@ -383,18 +491,6 @@ spatial_subclone_path <- file.path(plot_dir,
   paste0(sample_name, "_infercnv_subclones_spatial.pdf"))
 ggsave(spatial_subclone_path, p_spatial_subclone, width = 9, height = 7)
 cat("Saved:", spatial_subclone_path, "\n")
-
-# ── Save chr_wide table ───────────────────────────────────────────
-# Wide matrix of dominant CNV state per subclone per chromosome
-# Rows = subclones, columns = chromosomes, values = CNV state
-chr_wide_path <- file.path(plot_dir,
-  paste0(sample_name, "_cnv_chr_wide.csv"))
-
-write.csv(chr_wide,
-          file      = chr_wide_path,
-          row.names = FALSE)
-
-cat("Saved:", chr_wide_path, "\n")
 
 # Save updated Seurat object
 # Saves obj with two new metadata columns added by this script:
