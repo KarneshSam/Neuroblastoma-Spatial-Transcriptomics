@@ -311,4 +311,68 @@ cat("Matched cells for arm metadata:", length(matched_cells), "\n")
 obj <- AddMetaData(obj, metadata = full_arm_meta_df)
 cat("Arm CNV state columns added to metadata\n")
 
+# Validate arm columns added
+arm_cols <- paste0("chr", rep(1:22, each = 2), c("p", "q"))
+arm_cols_valid <- arm_cols[arm_cols %in% colnames(obj@meta.data)]
+cat("Valid arm columns:", length(arm_cols_valid), "\n")
+
+# Build proportion table for all arms 
+arm_prop_all <- lapply(arm_cols_valid, function(arm) {
+  obj@meta.data %>%
+    filter(cell_type %in% tumour_types) %>%
+    filter(!is.na(.data[[arm]])) %>%
+    group_by(cell_type, state = .data[[arm]]) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    group_by(cell_type) %>%
+    mutate(prop = round(n / sum(n), 3),
+           arm  = arm) %>%
+    ungroup()
+}) %>% bind_rows()
+
+# Print per arm summary
+for (arm in arm_cols_valid) {
+  cat("\n===", arm, "===\n")
+  arm_prop_all %>%
+    filter(arm == !!arm) %>%
+    arrange(cell_type, state) %>%
+    print(n = Inf)
+}
+
+# Plot: stacked bar — CNV state proportion per arm
+p_arm_bar <- arm_prop_all %>%
+  mutate(
+    state     = factor(state, levels = c("1","2","3","4","5","6")),
+    arm       = factor(arm, levels = arm_cols_valid),
+    cell_type = factor(cell_type, levels = tumour_types)
+  ) %>%
+  ggplot(aes(x = cell_type, y = prop, fill = state)) +
+  geom_bar(stat = "identity", position = "stack") +
+  facet_wrap(~ arm, ncol = 6) +
+  scale_fill_manual(
+    values = c("1" = "#2166AC", "2" = "#92C5DE", "3" = "grey90",
+               "4" = "#F4A582", "5" = "#D6604D", "6" = "#B2182B"),
+    name   = "CNV state",
+    labels = c("1" = "Complete loss", "2" = "Loss", "3" = "Neutral",
+               "4" = "Gain",          "5" = "Amplification",
+               "6" = "High amp")
+  ) +
+  theme_classic(base_size = 10) +
+  theme(
+    axis.text.x     = element_text(angle = 45, hjust = 1, size = 6),
+    axis.text.y     = element_text(size = 7),
+    strip.text      = element_text(face = "bold", size = 7),
+    legend.position = "bottom"
+  ) +
+  labs(x     = NULL,
+       y     = "Proportion of cells",
+       title = paste("CNV state distribution per tumour subtype",
+                     "per chromosome arm —", sample_name)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14))
+
+arm_bar_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_arm_state_barplot.pdf"))
+ggsave(arm_bar_path, p_arm_bar, width = 18, height = 12)
+cat("Saved:", arm_bar_path, "\n")
+
+
 
