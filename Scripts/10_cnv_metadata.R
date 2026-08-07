@@ -1,3 +1,13 @@
+# 10_cnv_metadata.R
+# Purpose : Load outputs from 09_cnv_analysis.R, add chromosome-
+#           and arm-level CNV states to Seurat metadata, compute
+#           CNV directionality scores, plot stacked bar charts and
+#           heatmaps, and save the final annotated object.
+# Requires: sample_name  (from 00_setup.R)
+#           _post_cnv.rds, _cnv_chr_wide.csv, _cnv_arm_wide.csv
+#           cell_groupings from InferCNV output directory
+# ─────────────────────────────────────────────────────────────────
+
 library(Seurat)
 library(dplyr)
 library(tidyr)
