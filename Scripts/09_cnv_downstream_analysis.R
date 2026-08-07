@@ -200,7 +200,7 @@ obj$infercnv_subclone <- ifelse(
 # Cells not in InferCNV keep their annotated cell type names
 obj$infercnv_subclone <- ifelse(
   is.na(obj$infercnv_subclone),
-  as.character(obj$cell_type),
+  as.character(obj$cell_type_hr),
   obj$infercnv_subclone)
 
 cat("\nSubclone distribution:\n")
