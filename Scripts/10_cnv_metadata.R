@@ -494,3 +494,25 @@ score_wide <- score_wide[tumour_types,
   classic_arms[classic_arms %in% colnames(score_wide)]
 ]
 
+# Plot: directionality heatmap — classic arms
+classic_heatmap_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_directionality_classic_arms.pdf"))
+
+pdf(classic_heatmap_path, width = 10, height = 6)
+pheatmap(score_wide,
+         color           = colorRampPalette(
+                             c("#2166AC", "white", "#B2182B"))(100),
+         breaks          = seq(-1, 1, length.out = 101),
+         cluster_rows    = TRUE,
+         cluster_cols    = FALSE,
+         display_numbers = TRUE,
+         number_format   = "%.2f",
+         fontsize_number = 11,
+         fontsize_row    = 12,
+         fontsize_col    = 12,
+         main            = paste("CNV directionality score — classic arms |",
+                                 sample_name,
+                                 "\n(+1 = all gain, -1 = all loss, 0 = neutral/mixed)"),
+         border_color    = "grey90")
+dev.off()
+cat("Saved:", classic_heatmap_path, "\n")
