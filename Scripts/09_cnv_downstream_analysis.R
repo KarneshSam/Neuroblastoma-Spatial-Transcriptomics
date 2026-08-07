@@ -370,3 +370,19 @@ pheatmap(chr_mat,
          border_color      = NA)
 dev.off()
 cat("Saved:", cnv_heatmap_path, "\n")
+
+# Plot: subclone labels in tissue space 
+# Shows spatial distribution of InferCNV subclones on tissue section
+p_spatial_subclone <- ImageDimPlot(obj,
+                                    group.by = "infercnv_subclone") +
+  labs(title = paste("InferCNV subclones — spatial |", sample_name)) +
+  theme(plot.title = element_text(size = 13, hjust = 0.5,
+                                  face = "bold"))
+
+spatial_subclone_path <- file.path(plot_dir,
+  paste0(sample_name, "_infercnv_subclones_spatial.pdf"))
+ggsave(spatial_subclone_path, p_spatial_subclone, width = 9, height = 7)
+cat("Saved:", spatial_subclone_path, "\n")
+
+cat("\nAll plots saved to:", plot_dir, "\n")
+cat("CNV analysis complete for", sample_name, "\n")
