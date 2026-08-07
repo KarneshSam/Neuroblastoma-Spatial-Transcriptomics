@@ -197,4 +197,67 @@ cat("Chromosome CNV state columns added to metadata\n")
 chr_cols_valid <- chr_cols[chr_cols %in% colnames(obj@meta.data)]
 cat("Valid chromosome columns:", length(chr_cols_valid), "\n")
 
+# Build proportion table for all chromosomes
+# For each chromosome: proportion of cells in each CNV state 
+# Filtered to tumour cells only
+state_prop_all <- lapply(chr_cols_valid, function(chr) {
+  obj@meta.data %>%
+    filter(cell_type %in% tumour_types) %>%
+    filter(!is.na(.data[[chr]])) %>%
+    group_by(cell_type, state = .data[[chr]]) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    group_by(cell_type) %>%
+    mutate(prop       = round(n / sum(n), 3),
+           chromosome = chr) %>%
+    ungroup()
+}) %>% bind_rows()
+
+# Print per chromosome summary
+for (chr in chr_cols_valid) {
+  cat("\n===", chr, "===\n")
+  state_prop_all %>%
+    filter(chromosome == chr) %>%
+    arrange(cell_type, state) %>%
+    print(n = Inf)
+}
+
+# Plot: stacked bar — CNV state proportion per chromosome
+# Each facet = one chromosome
+# x axis = tumour subtype, y axis = proportion, fill = CNV state
+p_chr_bar <- state_prop_all %>%
+  mutate(
+    state      = factor(state, levels = c("1","2","3","4","5","6")),
+    chromosome = factor(chromosome,
+                        levels = paste0("chr", c(1:22, "X"))),
+    cell_type  = factor(cell_type, levels = tumour_types)
+  ) %>%
+  ggplot(aes(x = cell_type, y = prop, fill = state)) +
+  geom_bar(stat = "identity", position = "stack") +
+  facet_wrap(~ chromosome, ncol = 6) +
+  scale_fill_manual(
+    values = c("1" = "#2166AC", "2" = "#92C5DE", "3" = "grey90",
+               "4" = "#F4A582", "5" = "#D6604D", "6" = "#B2182B"),
+    name   = "CNV state",
+    labels = c("1" = "Complete loss", "2" = "Loss", "3" = "Neutral",
+               "4" = "Gain",          "5" = "Amplification",
+               "6" = "High amp")
+  ) +
+  theme_classic(base_size = 10) +
+  theme(
+    axis.text.x     = element_text(angle = 45, hjust = 1, size = 7),
+    axis.text.y     = element_text(size = 7),
+    strip.text      = element_text(face = "bold", size = 8),
+    legend.position = "bottom"
+  ) +
+  labs(x     = NULL,
+       y     = "Proportion of cells",
+       title = paste("CNV state distribution per tumour subtype",
+                     "per chromosome —", sample_name)) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14))
+
+chr_bar_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_chr_state_barplot.pdf"))
+ggsave(chr_bar_path, p_chr_bar, width = 16, height = 10)
+cat("Saved:", chr_bar_path, "\n")
+
 
