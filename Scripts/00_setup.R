@@ -120,3 +120,38 @@ if (any(grepl("Ubuntu|Debian", os_info))) {
   cat("See the README for the full list.\n")
 }
 
+# STEP 2 — Bootstrap R installers
+
+cat("\nStep 2: Bootstrap R installers\n")
+
+install_if_missing <- function(pkg, source = "CRAN", repo = NULL) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    cat("  Installing:", pkg, "from", source, "...\n")
+    tryCatch({
+      if (source == "CRAN") {
+        install.packages(pkg,
+                         repos        = "https://cloud.r-project.org",
+                         dependencies = TRUE,
+                         quiet        = TRUE)
+      } else if (source == "Bioconductor") {
+        BiocManager::install(pkg,
+                             update = FALSE,
+                             ask    = FALSE,
+                             quiet  = TRUE)
+      }
+      if (requireNamespace(pkg, quietly = TRUE)) {
+        cat("    OK\n")
+      } else {
+        cat("    FAILED — package did not install correctly\n")
+      }
+    }, error = function(e) {
+      cat("    FAILED:", conditionMessage(e), "\n")
+    })
+  } else {
+    cat(sprintf("  %-30s already installed\n", pkg))
+  }
+}
+
+install_if_missing("BiocManager", "CRAN")
+install_if_missing("remotes",     "CRAN")
+
