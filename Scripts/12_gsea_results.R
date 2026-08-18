@@ -337,3 +337,25 @@ cat("Suppressed:              ", sum(sig_1_g$direction == "Suppressed"), "\n")
 cat("Plots saved to:          ", plot_dir, "\n")
 cat("==============================\n")
 
+#######################################
+# GSEA - CNV genes relationship analysis
+########################################
+
+# Prompt: InferCNV CNV genes file
+# pred_cnv_genes.dat from the InferCNV HMM output directory
+repeat {
+  cnv_genes_path <- trimws(readline(
+    prompt = "\nEnter path to pred_cnv_genes.dat: "))
+  if (nchar(cnv_genes_path) == 0) {
+    cat("Path cannot be empty.\n"); next
+  }
+  if (!file.exists(cnv_genes_path)) {
+    cat("File not found: '", cnv_genes_path, "'\n", sep = ""); next
+  }
+  break
+}
+
+cnv_genes <- read.table(cnv_genes_path, header = TRUE, sep = "\t")
+cat("CNV genes loaded:", nrow(cnv_genes), "rows\n")
+head(cnv_genes)
+
