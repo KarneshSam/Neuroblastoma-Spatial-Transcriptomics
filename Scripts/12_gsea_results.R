@@ -307,3 +307,20 @@ p_bubble <- ggplot(bubble_overall,
     panel.spacing = unit(0.3, "lines"),
     legend.title  = element_text(face = "bold")
   )
+
+# ── Save bubble plot ──────────────────────────────────────────────
+# Width scales with number of subclones, height with number of pathways
+# limitsize = FALSE allows very wide plots when many subclones exist
+bubble_path <- file.path(plot_dir,
+  paste0(sample_name, "_gsea_bubble_plot.pdf"))
+
+ggsave(
+  filename  = bubble_path,
+  plot      = p_bubble,
+  width     = max(10, n_distinct(bubble_overall$subclone) * 0.4),
+  height    = max(8,  n_distinct(bubble_overall$Description_short) * 0.2),
+  units     = "in",
+  dpi       = 300,
+  limitsize = FALSE
+)
+cat("Saved:", bubble_path, "\n")
