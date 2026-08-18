@@ -18,9 +18,7 @@ repeat {
   break
 }
 
-############################
 # Prompt: NE cells RDS path
-############################
 # Loads the NE-only subset saved at the end of 09_cnv_metadata.R
 # File is named: <sample_name>_ne_cells.rds
 repeat {
@@ -97,3 +95,26 @@ cat("Removed subclones (<", min_cells, "cells):",
 # Subset NE cells to only include valid subclones
 ne_cells_filtered <- subset(ne_cells,
                              infercnv_subclone %in% valid_subclones)
+
+###################################
+# Average expression per subclone
+####################################
+# Uses normalised 'data' layer — log-normalised counts
+# Reflects each subclone's own absolute expression profile
+# NOT one-vs-rest DE — avoids penalising genes expressed everywhere
+cat("\nComputing average expression per subclone...\n")
+
+# Run NormalizeData first if data layer is missing
+if (!"data" %in% Layers(ne_cells_filtered, assay = "Spatial.Polygons")) {
+  cat("No 'data' layer found — running NormalizeData() first...\n")
+  ne_cells_filtered <- NormalizeData(ne_cells_filtered,
+                                     assay = "Spatial.Polygons")
+}
+
+avg_expr_list <- AverageExpression(
+  ne_cells_filtered,
+  assays   = "Spatial.Polygons",
+  layer    = "data",
+  group.by = "infercnv_subclone"
+)
+
