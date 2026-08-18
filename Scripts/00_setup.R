@@ -1,47 +1,122 @@
 # 00_setup.R
-# Purpose : Load all libraries, read the RDS.
-# Output  : obj, sample_name — used by all downstream scripts
+# Purpose : Install ALL system-level and R package dependencies
+#           required by the full pipeline.
+#           Run this ONCE from the terminal before starting:
+#
+#             Rscript 00_setup.R
+#
+#           After this completes, all scripts 01_qc.R through
+#           12_gsea_results.R will load without errors.
 # ─────────────────────────────────────────────────────────────────
 
-# Libraries
-library(Seurat)            # Core single-cell analysis
-library(ggplot2)           # Plotting
-library(ggrepel)           # Non-overlapping labels on plots
-library(patchwork)         # Combine multiple plots
-library(dplyr)             # Data wrangling
-library(leiden)            # Clustering algorithm
-library(Banksy)            # Spatial analysis tools
-library(pheatmap)          # Heatmaps
-library(SeuratWrappers)    # Additional Seurat functionalities
-library(clustree)          # Visualize cluster relationships
-library(Matrix)            # Sparse matrix handling
+cat("==========================================================\n")
+cat(" Pipeline Dependency Installer\n")
+cat("==========================================================\n\n")
 
-# Load the list of Seurat object
-seu <- readRDS("seu_enact_seg_unprocessed.rds")
+# STEP 1 — System-level dependencies (Ubuntu / Debian)
+# These must be installed before any R packages can compile.
+# Requires sudo — if you do not have sudo, ask your sysadmin to
+# run this block, then proceed from Step 2.
 
-# Assign each sample to a variable for easy access
-P1 <- seu[[1]]
-P1.B <- seu[[2]]
-P2 <- seu[[3]]
-P2.B <- seu[[4]]
+cat("Step 1: System libraries (requires sudo)\n")
+cat("Checking OS...\n")
 
-########################
-# Prompt: choose sample
-########################
-# Get from the user --> select the dataset (Seurat object)
-repeat {
-  cat("\nAvailable samples: P1, P1.B, P2, P2.B\n")
-  sample_name <- trimws(readline(
-    prompt = "Which sample to run? (P1 / P1.B / P2 / P2.B): "))
-  if (sample_name %in% c("P1", "P1.B", "P2", "P2.B")) break
-  cat("Invalid input '", sample_name, "' — please enter P1, P1.B, P2, or P2.B.\n", sep = "")
+os_info <- tryCatch(readLines("/etc/os-release"), error = function(e) "")
+
+if (any(grepl("Ubuntu|Debian", os_info))) {
+
+  cat("Ubuntu/Debian detected — installing system libraries...\n\n")
+
+  sys_packages <- c(
+    # curl / SSL / XML (Seurat, rtracklayer, BiocManager)
+    "libcurl4-openssl-dev",
+    "libssl-dev",
+    "libxml2-dev",
+
+    # HDF5 (hdf5r, used by Seurat for .h5 files) 
+    "libhdf5-dev",
+
+    # Graphics / font rendering (ggplot2, patchwork)
+    "libfontconfig1-dev",
+    "libharfbuzz-dev",
+    "libfribidi-dev",
+    "libfreetype6-dev",
+    "libpng-dev",
+    "libtiff5-dev",
+    "libjpeg-dev",
+    "libcairo2-dev",
+    "libxt-dev",
+
+    # Compression (rtracklayer, Bioconductor I/O)
+    "libbz2-dev",
+    "liblzma-dev",
+    "zlib1g-dev",
+
+    # Graph / linear algebra (igraph, leiden, Matrix) 
+    "libglpk-dev",
+    "libgmp-dev",
+    "liblapack-dev",
+    "libblas-dev",
+
+    # GSL (infercnv dependencies) 
+    "libgsl-dev",
+
+    # CMake (needed to compile some C++ R packages) 
+    "cmake",
+
+    # Git (gert, credentials, devtools) 
+    "libgit2-dev",
+
+    # Units / spatial (pulled by tidyverse dependencies) 
+    "libudunits2-dev",
+    "libgdal-dev",
+    "libproj-dev",
+
+    # Java (AnnotationDbi, org.Hs.eg.db) 
+    "default-jdk",
+    "default-jre",
+
+    # Python (leiden uses leidenalg Python package)
+    "python3",
+    "python3-pip",
+    "python3-dev"
+  )
+
+  for (pkg in sys_packages) {
+    ret <- system(paste("dpkg -s", pkg, "> /dev/null 2>&1"))
+    if (ret != 0) {
+      cat("  Installing system package:", pkg, "...\n")
+      system(paste("sudo apt-get install -y", pkg,
+                   "2>&1 | tail -1"),
+             ignore.stdout = FALSE)
+    } else {
+      cat(sprintf("  %-35s already installed\n", pkg))
+    }
+  }
+
+  # Reconfigure Java for R (needed by rJava / AnnotationDbi)
+  cat("\nReconfiguring Java for R (sudo R CMD javareconf)...\n")
+  system("sudo R CMD javareconf 2>&1 | tail -3")
+
+  # Install leidenalg Python package (required by leiden R package)
+  cat("\nInstalling Python leidenalg (required by leiden R package)...\n")
+  system("pip3 install leidenalg igraph --quiet")
+
+} else if (any(grepl("CentOS|Red Hat|Fedora|Rocky", os_info))) {
+
+  cat("CentOS/RHEL/Fedora detected.\n")
+  cat("Please install system dependencies manually:\n\n")
+  cat("  sudo yum install -y \\\n")
+  cat("    openssl-devel libcurl-devel libxml2-devel hdf5-devel \\\n")
+  cat("    fontconfig-devel freetype-devel libpng-devel libtiff-devel \\\n")
+  cat("    libjpeg-devel cairo-devel bzip2-devel xz-devel zlib-devel \\\n")
+  cat("    glpk-devel gmp-devel lapack-devel blas-devel gsl-devel \\\n")
+  cat("    cmake git java-11-openjdk-devel python3 python3-pip\n\n")
+  cat("Then re-run this script.\n")
+
+} else {
+  cat("OS not recognised as Ubuntu/Debian or RHEL.\n")
+  cat("Please install system dependencies manually before proceeding.\n")
+  cat("See the README for the full list.\n")
 }
 
-# Set it to the obj variable for downstream use
-obj <- get(sample_name)   
-
-# Print the matrix (genes x cells)
-cat("\nLoaded:", sample_name,
-    "| Cells:", ncol(obj),
-    "| Genes:", nrow(obj), "\n")
-cat("Proceed to 01_qc.R\n")
