@@ -624,3 +624,182 @@ plot_data_gsea <- cnv_pathway_overlap_arm_gsea %>%
 cat("\nPlot data dimensions:", nrow(plot_data_gsea), "\n")
 cat("NE type breakdown:\n")
 print(table(plot_data_gsea$NE_type))
+
+# ── Step 5: Per NE type combined plot loop ────────────────────────
+# Detects NE subtypes dynamically from plot_data_gsea
+# For each NE type — three stacked panels:
+#   p1: CNV state bar per gene
+#   p2: Average expression bar per gene (coloured by CNV state)
+#   p3: Pathway x gene tile with NES label (coloured by CNV state)
+ne_types_present <- sort(unique(plot_data_gsea$NE_type))
+cat("\nNE types to plot:", paste(ne_types_present, collapse = ", "), "\n")
+
+for (ne in ne_types_present) {
+
+  cat("\nProcessing", ne, "...\n")
+
+  # Summarise across subclones within this NE type
+  dat <- plot_data_gsea %>%
+    filter(NE_type == ne) %>%
+    group_by(Description, Description_short, gene, arm, direction) %>%
+    summarise(
+      dominant_state = as.integer(
+        names(sort(table(dominant_state), decreasing = TRUE)[1])),
+      avg_NES  = mean(avg_NES,  na.rm = TRUE),
+      avg_expr = mean(avg_expr, na.rm = TRUE),
+      .groups  = "drop"
+    ) %>%
+    mutate(
+      cnv_label = factor(label_cnv(dominant_state),
+                         levels = cnv_state_order)
+    )
+
+  if (nrow(dat) == 0) {
+    cat(ne, "— no data, skipping\n"); next
+  }
+
+  # Order genes by arm then name for genomic grouping on x axis
+  gene_order <- dat %>%
+    arrange(arm, gene) %>%
+    pull(gene) %>%
+    unique()
+
+  n_genes    <- length(gene_order)
+  n_pathways <- n_distinct(dat$Description)
+  cat(ne, "—", n_genes, "genes,", n_pathways, "pathways\n")
+
+  dat <- dat %>% mutate(gene = factor(gene, levels = gene_order))
+
+  # One row per gene for CNV and expression panels
+  cnv_data  <- dat %>%
+    dplyr::select(gene, arm, dominant_state, cnv_label) %>%
+    distinct(gene, .keep_all = TRUE)
+
+  expr_data <- dat %>%
+    dplyr::select(gene, arm, avg_expr, cnv_label) %>%
+    distinct(gene, .keep_all = TRUE)
+
+  # ── p1: CNV state bar ─────────────────────────────────────────
+  p1 <- ggplot(cnv_data,
+               aes(x = gene, y = dominant_state, fill = cnv_label)) +
+    geom_col(width = 0.7) +
+    geom_hline(yintercept = 3, linetype = "dashed",
+               color = "grey40", linewidth = 0.5) +
+    scale_fill_cnv +
+    scale_y_continuous(
+      breaks = 1:6,
+      labels = c("Complete\nloss", "Loss", "Neutral",
+                 "Gain", "2x Gain", "Amplification"),
+      limits = c(0, 6.5)
+    ) +
+    scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+    facet_grid(. ~ arm, scales = "free_x", space = "free_x") +
+    labs(subtitle = paste0(ne, " — CNV state"),
+         x = NULL, y = "CNV state") +
+    theme_bw() +
+    theme(
+      axis.text.x      = element_text(angle = 90, hjust = 1,
+                                      vjust = 0.5, size = 6,
+                                      face = "bold"),
+      axis.text.y      = element_text(size = 8),
+      strip.text.x     = element_text(size = 7, face = "bold",
+                                      angle = 90),
+      strip.background = element_rect(fill = "grey90",
+                                      color = "grey60"),
+      plot.subtitle    = element_text(face = "bold", size = 10),
+      legend.position  = "none"
+    )
+
+  # ── p2: Expression bar ────────────────────────────────────────
+  p2 <- ggplot(expr_data,
+               aes(x = gene, y = avg_expr, fill = cnv_label)) +
+    geom_col(width = 0.7) +
+    scale_fill_cnv +
+    scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+    facet_grid(. ~ arm, scales = "free_x", space = "free_x") +
+    labs(subtitle = paste0(ne, " — Expression"),
+         caption  = "Average normalised expression | Colour = CNV state",
+         x = NULL, y = "Average normalised expression") +
+    theme_bw() +
+    theme(
+      axis.text.x      = element_text(angle = 90, hjust = 1,
+                                      vjust = 0.5, size = 6,
+                                      face = "bold"),
+      axis.text.y      = element_text(size = 7),
+      strip.text.x     = element_text(size = 7, face = "bold",
+                                      angle = 90),
+      strip.background = element_rect(fill = "grey90",
+                                      color = "grey60"),
+      plot.subtitle    = element_text(face = "bold", size = 10),
+      plot.caption     = element_text(size = 7, color = "grey40",
+                                      hjust = 0.5),
+      legend.position  = "none"
+    )
+
+  # ── p3: Pathway x gene tile ───────────────────────────────────
+  p3 <- ggplot(dat,
+               aes(x     = gene,
+                   y     = Description_short,
+                   fill  = cnv_label,
+                   label = ifelse(!is.na(avg_NES),
+                                  round(avg_NES, 2), ""))) +
+    geom_tile(color = "white", linewidth = 0.4) +
+    geom_text(size = 2.5, color = "black", na.rm = TRUE) +
+    scale_fill_cnv +
+    scale_x_discrete(guide = guide_axis(n.dodge = 2)) +
+    facet_grid(direction ~ ., scales = "free_y", space = "free_y") +
+    labs(subtitle = paste0(ne, " — Pathway \u00d7 Gene (GSEA)"),
+         caption  = "Fill = CNV state | Number = avg NES",
+         x = "Gene", y = "Pathway") +
+    theme_bw() +
+    theme(
+      axis.text.x      = element_text(angle = 90, hjust = 1,
+                                      vjust = 0.5, size = 6,
+                                      face = "bold"),
+      axis.text.y      = element_text(size = 7),
+      strip.text.y     = element_text(size = 8, face = "bold"),
+      strip.background = element_rect(fill = "grey85"),
+      plot.subtitle    = element_text(face = "bold", size = 10),
+      plot.caption     = element_text(size = 7, color = "grey40",
+                                      hjust = 0),
+      legend.position  = "right"
+    )
+
+  # ── Combine panels ────────────────────────────────────────────
+  combined <- ((p1 | p2) / p3) +
+    plot_layout(
+      heights = c(1.2, max(2, n_pathways * 0.3)),
+      guides  = "collect"
+    ) +
+    plot_annotation(
+      title    = paste0(ne, " — GSEA Core Enrichment Genes | ",
+                        sample_name),
+      subtitle = "CNV state | Expression | GSEA pathway genes only",
+      theme    = theme(
+        plot.title    = element_text(face = "bold", size = 14,
+                                     hjust = 0.5),
+        plot.subtitle = element_text(size = 11, hjust = 0.5)
+      )
+    )
+
+  out_width  <- max(16, n_genes    * 0.22)
+  out_height <- max(8,  4 + n_pathways * 0.35)
+
+  out_path <- file.path(plot_dir,
+    paste0(sample_name, "_", ne, "_gsea_core_enrichment.png"))
+
+  ggsave(
+    filename  = out_path,
+    plot      = combined,
+    width     = out_width,
+    height    = out_height,
+    units     = "in",
+    dpi       = 300,
+    limitsize = FALSE
+  )
+
+  cat(ne, "saved:", out_width, "x", out_height, "in ->", out_path, "\n")
+}
+
+cat("\nAll plots saved to:", plot_dir, "\n")
+cat("Analysis complete for", sample_name, "\n")
