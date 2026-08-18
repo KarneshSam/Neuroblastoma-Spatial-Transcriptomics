@@ -190,3 +190,22 @@ for (pkg in cran_packages) {
   install_if_missing(pkg, "CRAN")
 }
 
+# STEP 4 — Bioconductor packages
+cat("\nStep 4: Bioconductor packages\n")
+
+bioc_packages <- c(
+  "Banksy",          # Spatial neighbourhood embedding
+  "SeuratWrappers",  # RunBanksy and other Seurat extensions
+  "infercnv",        # Copy number variation inference
+  "rtracklayer",     # Import GTF / GFF files
+  "clusterProfiler", # Gene set enrichment analysis framework
+  "ReactomePA",      # Reactome pathway analysis
+  "org.Hs.eg.db",   # Human gene annotation (Entrez ID conversion)
+  "AnnotationDbi",   # Database interface (dependency of org.Hs.eg.db)
+  "BiocParallel"     # Parallel processing (used by clusterProfiler)
+)
+
+for (pkg in bioc_packages) {
+  install_if_missing(pkg, "Bioconductor")
+}
+
