@@ -359,3 +359,33 @@ cnv_genes <- read.table(cnv_genes_path, header = TRUE, sep = "\t")
 cat("CNV genes loaded:", nrow(cnv_genes), "rows\n")
 head(cnv_genes)
 
+# Prompt: average expression CSV
+# avg_expression_per_subclone.csv saved by 10_gsea_subclone.R
+repeat {
+  avg_expr_path <- trimws(readline(
+    prompt = "\nEnter path to avg_expression_per_subclone.csv: "))
+  if (nchar(avg_expr_path) == 0) {
+    cat("Path cannot be empty.\n"); next
+  }
+  if (!file.exists(avg_expr_path)) {
+    cat("File not found: '", avg_expr_path, "'\n", sep = ""); next
+  }
+  break
+}
+
+df_mar_g <- read.csv(avg_expr_path, check.names = FALSE)
+cat("Loaded avg expression:", nrow(df_mar_g), "genes x",
+    ncol(df_mar_g) - 1, "subclones\n")
+
+# Centromere positions (hg38)
+# Required for chromosome arm assignment of CNV genes
+centromeres <- data.frame(
+  chr        = paste0("chr", c(1:22, "X", "Y")),
+  centromere = c(
+    123400000, 93900000, 90900000, 50000000, 48800000, 59800000,
+    60100000,  45200000, 43000000, 39800000, 53400000, 35500000,
+    17700000,  17200000, 19000000, 36800000, 25100000, 18500000,
+    26200000,  28100000, 12000000, 15000000, 61000000, 10400000
+  )
+)
+
