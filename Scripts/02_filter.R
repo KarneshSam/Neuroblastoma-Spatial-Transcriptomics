@@ -27,7 +27,7 @@ repeat {
   break
 }
 
-# ── Prompt: input RDS file ────────────────────────────────────────
+# Prompt: input RDS file 
 # Should be the _post_qc.rds saved by 01_qc.R
 repeat {
   rds_path <- trimws(readline(
@@ -124,67 +124,60 @@ cat(sprintf("  Max MT %%       : %.1f\n", max_mt))
 cat(sprintf("  Min gene count : %d\n", as.integer(min_gene_count)))
 cat(sprintf("  Max iterations : %d\n", max_iter))
 
-#####################
-# Filter thresholds
-#####################
-# Adjust these based on QC plots from 01_qc.R
-min_features   <- 50    # Minimum unique genes per cell
-min_bins       <- 3     # Minimum unique spatial bins per cell
-max_mt         <- 25    # Maximum mitochondrial % per cell
-min_gene_count <- 50    # Minimum total counts per gene across all cells
-max_iter       <- 10    # Safety cap on iterations
-
+# Iterative filtering loop
 cat("\nIterative filtering —", sample_name, "\n")
 
 for (iter in seq_len(max_iter)) {
-  
-  # Record counts before round of filtering
+
+  # Record counts before this round of filtering
   n_cells_before <- ncol(obj)
   n_genes_before <- nrow(obj)
 
   # Recompute feature count from current matrix
+  # Necessary because subsetting changes the matrix each round
   obj[["nFeature_fresh"]] <- colSums(
     obj[["Spatial.Polygons"]]$counts > 0)
 
-  # Cell filter
+  # Cell filter 
+  # Keep cells passing all three thresholds simultaneously
   obj <- subset(obj,
                 subset = nFeature_fresh  > min_features &
                          num_unique_bins > min_bins     &
                          percent.mt      < max_mt)
 
   # Gene filter
+  # Keep genes with total counts above threshold across remaining cells
   keep_genes <- rownames(obj)[
     Matrix::rowSums(obj[["Spatial.Polygons"]]$counts) > min_gene_count]
   obj <- subset(obj, features = keep_genes)
-  
-  # Record counts after filtering
+
+  # Record counts after this round
   n_cells_after <- ncol(obj)
   n_genes_after <- nrow(obj)
 
-  # Report for each round
-  cat("Round", iter, "→",
-      "Cells:", n_cells_before, "→", n_cells_after,
-      "| Genes:", n_genes_before, "→", n_genes_after, "\n")
-  
-  # Convergence check: 
-  # if no more cells or genes are being filtered out, stop
+  # Report this round 
+  cat("Round", iter, "->",
+      "Cells:", n_cells_before, "->", n_cells_after,
+      "| Genes:", n_genes_before, "->", n_genes_after, "\n")
+
+  # Convergence check 
+  # If nothing changed this round, filtering has stabilised
   if (n_cells_before == n_cells_after &
-      n_genes_before == n_genes_after) {
-    cat("Converged at round", iter, "\n")
+      n_genes_before  == n_genes_after) {
+    cat("  Converged at round", iter, "\n")
     break
   }
-  
-  # Max iteration check
-  # If still changing after max_iter rounds, warn and stop
+
+  # Max iterations check 
   if (iter == max_iter) {
-    cat("Warning: max iterations reached — check thresholds\n")
+    cat("  Warning: max iterations reached — check thresholds\n")
     break
   }
 
   # Warning if losing too many cells per round
   pct_lost <- (n_cells_before - n_cells_after) / n_cells_before * 100
   if (pct_lost > 10) {
-    cat("Warning: losing", round(pct_lost, 1),
+    cat("  Warning: losing", round(pct_lost, 1),
         "% of cells in round", iter,
         "— consider relaxing thresholds\n")
   }
@@ -194,5 +187,38 @@ for (iter in seq_len(max_iter)) {
 obj[["nCount_fresh"]] <- colSums(obj[["Spatial.Polygons"]]$counts)
 
 cat("\nFiltering done:", ncol(obj), "cells |", nrow(obj), "genes\n")
+
+# Plot: post-filter QC summary
+# Re-plot QC metrics after filtering to confirm thresholds worked
+p1 <- VlnPlot(obj, features = "nFeature_Spatial.Polygons",
+              pt.size = 0, group.by = "orig.ident") +
+  ggtitle("Features (post-filter)") +
+  theme(plot.title = element_text(size = 12, hjust = 0.5))
+
+p2 <- VlnPlot(obj, features = "nCount_Spatial.Polygons",
+              pt.size = 0, group.by = "orig.ident") +
+  ggtitle("UMI counts (post-filter)") +
+  theme(plot.title = element_text(size = 12, hjust = 0.5))
+
+p3 <- VlnPlot(obj, features = "percent.mt",
+              pt.size = 0, group.by = "orig.ident") +
+  ggtitle("Mitochondrial % (post-filter)") +
+  theme(plot.title = element_text(size = 12, hjust = 0.5))
+
+p_filter <- (p1 | p2 | p3) +
+  plot_annotation(
+    title = paste("Post-filter QC metrics —", sample_name),
+    theme = theme(plot.title = element_text(size = 14, hjust = 0.5,
+                                            face = "bold")))
+
+filter_plot_path <- file.path(plot_dir,
+  paste0(sample_name, "_post_filter_qc.pdf"))
+ggsave(filter_plot_path, p_filter, width = 14, height = 5)
+cat("Saved:", filter_plot_path, "\n")
+
+# Save filtered object
+# 03_normalise.R loads from this file
+saveRDS(obj, file = paste0(sample_name, "_post_filter.rds"))
+cat("Saved:", paste0(sample_name, "_post_filter.rds"), "\n")
 cat("Proceed to 03_normalise.R\n")
 
