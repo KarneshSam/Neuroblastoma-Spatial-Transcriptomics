@@ -505,3 +505,65 @@ all_conf <- cnv_pathway_overlap_gsea %>%
     )
   )
 
+# Plot: CNV influence bubble plot — all states
+p_cnv_bubble <- ggplot(all_conf,
+                        aes(x     = reorder(subclone, NE_type),
+                            y     = Description_short,
+                            size  = n_genes,
+                            fill  = factor(dominant_state),
+                            shape = direction)) +
+  geom_point(alpha = 0.8, stroke = 0.3, color = "grey30") +
+  scale_size_continuous(
+    range  = c(2, 8),
+    name   = "N CNV genes\nin pathway",
+    breaks = c(1, 3, 6, 15),
+    limits = c(1, 15),
+    guide  = guide_legend(
+      override.aes = list(shape = 24, fill = "grey50",
+                          color = "grey30"))
+  ) +
+  scale_fill_manual(
+    values = c("1" = "#92C5DE", "2" = "#D1E5F0", "3" = "#D9D9D9",
+               "4" = "#F4A582", "5" = "#B2182B"),
+    name   = "Dominant CNV\nstate",
+    labels = c("1" = "1 (Complete loss)", "2" = "2 (Loss)",
+               "3" = "3 (Neutral)",       "4" = "4 (Gain)",
+               "5" = "5 (2x Gain)"),
+    guide  = guide_legend(
+      override.aes = list(shape = 24, size = 4, color = "grey30"))
+  ) +
+  scale_shape_manual(
+    values = c("High_expression" = 24, "Low_expression" = 25),
+    name   = "Direction",
+    guide  = guide_legend(
+      override.aes = list(size = 4, fill = "grey50",
+                          color = "grey30"))
+  ) +
+  facet_grid(. ~ NE_type, scales = "free_x", space = "free_x") +
+  labs(
+    title = paste("CNV Influence Pathway Activation per Subclone |",
+                  sample_name),
+    x     = "Subclone",
+    y     = "Reactome Pathway"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x   = element_text(angle = 90, hjust = 1,
+                                 vjust = 0.5, size = 7),
+    axis.text.y   = element_text(size = 8),
+    strip.text    = element_text(face = "bold", size = 10),
+    plot.title    = element_text(face = "bold", hjust = 0.5),
+    panel.spacing = unit(0.3, "lines"),
+    legend.title  = element_text(face = "bold")
+  )
+
+cnv_bubble_path <- file.path(plot_dir,
+  paste0(sample_name, "_cnv_gsea_pathway_bubble.pdf"))
+ggsave(cnv_bubble_path, p_cnv_bubble,
+       width     = 50,
+       height    = 12,
+       units     = "in",
+       dpi       = 300,
+       limitsize = FALSE)
+cat("Saved:", cnv_bubble_path, "\n")
+
