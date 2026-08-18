@@ -57,6 +57,33 @@ if (inherits(rds_obj, "Seurat")) {
   stop("RDS does not contain a Seurat object or a list of Seurat objects.")
 }
 
+# Print summary of all samples found
+cat("\nSamples available:\n")
+for (nm in names(sample_list)) {
+  cat(sprintf("  %-6s | Cells: %d | Genes: %d\n",
+              nm,
+              ncol(sample_list[[nm]]),
+              nrow(sample_list[[nm]])))
+}
+
+# ── Prompt: choose sample ─────────────────────────────────────────
+# Running one sample at a time avoids loading all into memory
+# Keep asking until a valid sample name from the list is entered
+repeat {
+  cat("\nAvailable samples:", paste(names(sample_list), collapse = ", "), "\n")
+  sample_name <- trimws(readline(prompt = "Which sample to run? "))
+  if (sample_name %in% names(sample_list)) break
+  cat("Invalid '", sample_name,
+      "' — please enter one of the listed names.\n", sep = "")
+}
+
+# Extract the chosen sample as obj
+obj <- sample_list[[sample_name]]
+
+cat("\nLoaded:", sample_name,
+    "| Cells:", ncol(obj),
+    "| Genes:", nrow(obj), "\n")
+
 # Mitochondrial percentage per cell
 # High mitochondrial % indicates damaged or dying cells
 # Genes starting with MT- are mitochondrial in human data
