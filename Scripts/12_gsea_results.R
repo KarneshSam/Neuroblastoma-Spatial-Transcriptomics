@@ -202,3 +202,35 @@ ne_colors_gsea <- setNames(
 )
 ann_colors_gsea <- list(NE_type = ne_colors_gsea)
 
+# Plot: heatmap
+# breaks and legend_breaks both derived from nes_thresh
+heatmap_path <- file.path(plot_dir,
+  paste0(sample_name, "_gsea_pathway_heatmap.pdf"))
+
+pdf(heatmap_path, width = 16, height = 12)
+pheatmap(mat_direction,
+         annotation_col     = col_ann_gsea,
+         annotation_colors  = ann_colors_gsea,
+         color              = c("#2166AC", "#D9D9D9", "#B2182B"),
+         breaks             = c(-(nes_thresh + 0.5),
+                                      -0.5,
+                                       0.5,
+                                       nes_thresh + 0.5),
+         cluster_rows             = TRUE,
+         clustering_distance_cols = "binary",
+         clustering_method        = "ward.D2",
+         show_colnames            = TRUE,
+         show_rownames            = TRUE,
+         fontsize_row             = 6,
+         fontsize_col             = 6,
+         angle_col                = 90,
+         main                     = paste("GSEA Reactome Pathways x Subclones |",
+                                          sample_name,
+                                          "\n(Activated | Absent | Suppressed)",
+                                          "| |NES| >", nes_thresh),
+         gaps_col                 = cumsum(table(col_ann_gsea$NE_type)),
+         legend_breaks            = c(-nes_thresh, 0, nes_thresh),
+         legend_labels            = c("Suppressed", "Absent", "Activated"),
+         border_color             = "grey90")
+dev.off()
+cat("Saved:", heatmap_path, "\n")
