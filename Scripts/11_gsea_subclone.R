@@ -118,3 +118,116 @@ avg_expr_list <- AverageExpression(
   group.by = "infercnv_subclone"
 )
 
+# Save average expression matrix for reference and QC
+avg_expr_path <- file.path(output_dir, "avg_expression_per_subclone.csv")
+write.csv(as.data.frame(avg_expr), avg_expr_path)
+cat("Saved:", avg_expr_path, "\n")
+
+##############################
+# GSEA Reactome per subclone
+##############################
+# Ranked by average expression — high rank = highly expressed in subclone
+# minGSSize = 5  : captures small neuropeptide pathways
+# maxGSSize = 200: avoids overly broad gene sets
+# pvalueCutoff = 1: collect all results first, filter after
+# eps = 0        : more accurate p-value computation
+cat("\nRunning GSEA Reactome per subclone...\n")
+
+gsea_subclone <- list()
+all_pathways  <- list()
+
+for (sc in colnames(avg_expr)) {
+
+  cat("\n===", sc, "===\n")
+
+  sc_expr <- avg_expr[, sc]
+
+  # Drop zero-expression genes — add no information to GSEA ranking
+  sc_expr <- sc_expr[sc_expr > 0]
+
+  gene_df <- data.frame(
+    gene           = names(sc_expr),
+    avg_expression = as.numeric(sc_expr)
+  ) %>%
+    arrange(desc(avg_expression))
+  # Filter out subclones with too few expressed genes
+  if (nrow(gene_df) < 5) {
+    cat("Too few expressed genes, skipping\n"); next
+  }
+
+  # Convert gene symbols to Entrez IDs — required by ReactomePA
+  entrez <- tryCatch({
+    bitr(gene_df$gene,
+         fromType = "SYMBOL",
+         toType   = "ENTREZID",
+         OrgDb    = org.Hs.eg.db)
+  }, error = function(e) NULL)
+
+  if (is.null(entrez) || nrow(entrez) == 0) {
+    cat("No Entrez IDs found, skipping\n"); next
+  }
+
+  # Join back to expression values and build named ranked vector
+  # distinct() removes any duplicate Entrez IDs keeping highest expression
+  sc_ranked <- gene_df %>%
+    inner_join(entrez, by = c("gene" = "SYMBOL")) %>%
+    arrange(desc(avg_expression)) %>%
+    distinct(ENTREZID, .keep_all = TRUE)
+
+  ranked_list <- setNames(sc_ranked$avg_expression,
+                          sc_ranked$ENTREZID)
+
+  cat("Genes in ranked list:", length(ranked_list), "\n")
+
+  # Run GSEA Reactome
+  result <- tryCatch({
+    gsePathway(
+      geneList      = ranked_list,
+      organism      = "human",
+      minGSSize     = 5,
+      maxGSSize     = 200,
+      pvalueCutoff  = 1,
+      pAdjustMethod = "BH",
+      verbose       = FALSE,
+      eps           = 0
+    )
+  }, error = function(e) {
+    cat("GSEA error:", conditionMessage(e), "\n")
+    NULL
+  })
+
+  if (is.null(result) || nrow(as.data.frame(result)) == 0) {
+    cat("No pathways found\n"); next
+  }
+
+  # Filter to pathways with pvalue < 0.05 and annotate
+  result_df <- as.data.frame(result) %>%
+    filter(pvalue < 0.05) %>%
+    arrange(p.adjust) %>%
+    mutate(
+      subclone  = sc,
+      NE_type   = str_extract(sc, "^[^.]+"),
+      direction = ifelse(NES > 0, "High_expression", "Low_expression"),
+      sig_level = case_when(
+        p.adjust < 0.05 ~ "Significant",
+        p.adjust < 0.1  ~ "Suggestive",
+        TRUE            ~ "Nominal"
+      )
+    )
+
+  if (nrow(result_df) == 0) {
+    cat("No significant pathways after pvalue < 0.05 filter\n"); next
+  }
+
+  cat("Significant pathways:", nrow(result_df),
+      "| High expression:", sum(result_df$NES > 0),
+      "| Low expression:", sum(result_df$NES < 0), "\n")
+
+  gsea_subclone[[sc]] <- list(
+    result      = result,
+    pathways    = result_df,
+    ranked_list = ranked_list
+  )
+
+  all_pathways[[sc]] <- result_df
+}
