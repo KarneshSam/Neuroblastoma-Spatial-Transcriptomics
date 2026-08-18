@@ -467,4 +467,21 @@ gsea_pathway_genes_long <- gsea_pathway_genes_long %>%
 
 cat("After symbol join:", nrow(gsea_pathway_genes_long), "rows\n")
 
+# Step 2: Match to CNV genes — subclone specific
+# Inner join: only keep genes that are both in the GSEA core
+# enrichment AND flagged as CNV genes in that subclone
+cat("\nMatching core enrichment genes to CNV genes...\n")
+
+cnv_pathway_overlap_gsea <- gsea_pathway_genes_long %>%
+  mutate(subclone_clean = gsub("-", "_", subclone)) %>%
+  inner_join(
+    cnv_genes %>% dplyr::rename(subclone_clean = cell_group_name),
+    by = c("subclone_clean" = "subclone_clean",
+           "gene"           = "gene")
+  ) %>%
+  dplyr::select(subclone, Description, gene, chr, start, end,
+                state, NES, direction) %>%
+  arrange(subclone, Description)
+
+cat("CNV-pathway overlaps:", nrow(cnv_pathway_overlap_gsea), "\n")
 
