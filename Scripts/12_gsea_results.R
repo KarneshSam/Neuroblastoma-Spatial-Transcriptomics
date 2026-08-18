@@ -1,7 +1,7 @@
 # 11_gsea_results.R
 # Purpose : Load GSEA results from 10_gsea_subclone.R, filter by
 #           p.adjust and user-defined NES threshold, generate
-#           heatmap and bubble plot, and save all outputs.
+#           heatmap and bubble plot, GSEA-CNV plotand save all outputs.
 # Requires: sample_name  (from 00_setup.R)
 #           gsea_all_subclones.csv from 10_gsea_subclone.R output
 # ─────────────────────────────────────────────────────────────────
@@ -324,3 +324,16 @@ ggsave(
   limitsize = FALSE
 )
 cat("Saved:", bubble_path, "\n")
+
+# Summary
+cat("\n========== SUMMARY ==========\n")
+cat("Sample:                  ", sample_name, "\n")
+cat("Total pathways loaded:   ", nrow(df_g), "\n")
+cat("After p.adjust < 0.05:  ", nrow(sig), "\n")
+cat("After top 10 per clone: ", nrow(sig_top10), "\n")
+cat("After |NES| >", nes_thresh, ":  ", nrow(sig_1_g), "\n")
+cat("Activated:               ", sum(sig_1_g$direction == "Activated"), "\n")
+cat("Suppressed:              ", sum(sig_1_g$direction == "Suppressed"), "\n")
+cat("Plots saved to:          ", plot_dir, "\n")
+cat("==============================\n")
+
