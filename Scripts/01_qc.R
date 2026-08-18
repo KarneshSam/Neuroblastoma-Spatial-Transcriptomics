@@ -134,6 +134,11 @@ p3 <- VlnPlot(obj, features = "percent.mt",
     title = paste("QC metrics —", sample_name),
     theme = theme(plot.title = element_text(size = 14, hjust = 0.5,
                                             face = "bold")))
+# Save QC violin plot
+qc_path <- file.path(plot_dir,
+  paste0(sample_name, "_qc_metrics.pdf"))
+ggsave(qc_path, p_qc, width = 14, height = 5)
+cat("Saved:", qc_path, "\n")
 
 ##################################
 # Per-gene UMI count distribution
@@ -142,11 +147,20 @@ p3 <- VlnPlot(obj, features = "percent.mt",
 gene_counts <- rowSums(obj[["Spatial.Polygons"]]$counts)
 
 # Violin Plot
-ggplot(data.frame(gene_counts), aes(x = "", y = gene_counts)) +
+gp_gene_dist <- ggplot(data.frame(gene_counts),
+                      aes(x = "", y = gene_counts)) +
   geom_violin() +
   ylim(0, 10000) +
   labs(title = paste("Counts per gene —", sample_name),
        x = NULL, y = "Counts") +
-  theme_classic()
+  theme_classic() +
+  theme(plot.title = element_text(size = 13, hjust = 0.5,
+                                  face = "bold"))
 
-cat("QC plots done. Inspect, then proceed to 02_filter.R\n")
+# Save gene count distribution plot
+gene_dist_path <- file.path(plot_dir,
+  paste0(sample_name, "_gene_count_distribution.pdf"))
+ggsave(gene_dist_path, p_gene_dist, width = 6, height = 5)
+cat("Saved:", gene_dist_path, "\n")
+
+cat("\nQC plots done. Inspect, then proceed to 02_filter.R\n")
