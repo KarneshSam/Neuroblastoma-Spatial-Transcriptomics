@@ -34,6 +34,29 @@ repeat {
 cat("Loading:", rds_path, "\n")
 rds_obj <- readRDS(rds_path)
 
+# Handle single object or list of any length
+# Case 1: single Seurat object — wrap in list for uniform handling
+# Case 2: named or unnamed list of Seurat objects of any length
+if (inherits(rds_obj, "Seurat")) {
+  cat("Detected: single Seurat object\n")
+  sample_list <- list(S1 = rds_obj)
+
+} else if (is.list(rds_obj) &&
+           all(sapply(rds_obj, inherits, "Seurat"))) {
+  cat("Detected:", length(rds_obj), "Seurat objects in list\n")
+
+  # Use existing names if available, otherwise assign S1, S2, S3 ...
+  if (is.null(names(rds_obj))) {
+    names(rds_obj) <- paste0("S", seq_along(rds_obj))
+    cat("No names found — assigned:",
+        paste(names(rds_obj), collapse = ", "), "\n")
+  }
+  sample_list <- rds_obj
+
+} else {
+  stop("RDS does not contain a Seurat object or a list of Seurat objects.")
+}
+
 # Mitochondrial percentage per cell
 # High mitochondrial % indicates damaged or dying cells
 # Genes starting with MT- are mitochondrial in human data
