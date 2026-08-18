@@ -135,3 +135,70 @@ sig_1_g <- sig_top10 %>% filter(abs(NES) > nes_thresh)
 
 cat("Pathways after NES filter:", nrow(sig_1_g), "\n")
 
+# Parse leading edge
+# Extracts tags, list, signal percentages from leading_edge string
+# tags   : % of pathway genes in the leading edge
+# list   : % of ranked list at the point of max enrichment
+# signal : enrichment signal strength
+sig_1_g <- sig_1_g %>%
+  mutate(
+    tags   = as.numeric(str_extract(leading_edge, "(?<=tags=)\\d+")),
+    list   = as.numeric(str_extract(leading_edge, "(?<=list=)\\d+")),
+    signal = as.numeric(str_extract(leading_edge, "(?<=signal=)\\d+"))
+  ) %>%
+  # Leading edge gene count = (tags% / 100) * pathway gene set size
+  mutate(leading_edge_count = round((tags / 100) * setSize))
+
+# Add direction column
+# Derived from NES sign — positive = Activated, negative = Suppressed
+sig_1_g <- sig_1_g %>%
+  mutate(
+    direction = case_when(
+      NES > 0 ~ "Activated",
+      NES < 0 ~ "Suppressed",
+      TRUE    ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(direction))
+
+###########################################
+# Heatmap - Pathway enrichment per subclone
+############################################
+
+# Build direction matrix
+# Rows = pathways, columns = subclones
+# Values: +2 = activated, -2 = suppressed, 0 = absent
+heatmap_base_gsea <- sig_1_g %>%
+  dplyr::select(Description, subclone, NES, direction) %>%
+  distinct() %>%
+  mutate(value = ifelse(NES > 0, nes_thresh, -nes_thresh))
+
+mat_direction <- heatmap_base_gsea %>%
+  dplyr::select(Description, subclone, value) %>%
+  pivot_wider(names_from  = subclone,
+              values_from = value,
+              values_fill = 0) %>%
+  column_to_rownames("Description") %>%
+  as.matrix()
+
+# Column annotation
+# Annotates each subclone column with its NE type
+col_ann <- sig_1_g %>%
+  dplyr::select(subclone, NE_type) %>%
+  distinct() %>%
+  filter(subclone %in% colnames(mat_direction)) %>%
+  arrange(NE_type) %>%
+  column_to_rownames("subclone")
+
+# Order columns by NE type
+col_order     <- rownames(col_ann)
+mat_direction <- mat_direction[, col_order]
+
+# ── NE type colours — dynamic ─────────────────────────────────────
+n_ne <- n_distinct(col_ann_gsea$NE_type)
+ne_colors_gsea <- setNames(
+  brewer.pal(max(n_ne, 3), "Set1")[seq_len(n_ne)],
+  unique(sort(col_ann_gsea$NE_type))
+)
+ann_colors_gsea <- list(NE_type = ne_colors_gsea)
+
