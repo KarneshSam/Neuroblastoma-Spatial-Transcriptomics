@@ -254,3 +254,5 @@ if (length(failed) > 0) {
   cat("You can now run: Rscript 01_qc.R\n")
 }
 cat("==========================================================\n")
+cat("Setup complete.\n")
+cat("NOTE: This script for installation of dependencies was done using the help of an AI language model")
