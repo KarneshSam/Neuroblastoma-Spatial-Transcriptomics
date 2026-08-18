@@ -163,4 +163,10 @@ gene_dist_path <- file.path(plot_dir,
 ggsave(gene_dist_path, p_gene_dist, width = 6, height = 5)
 cat("Saved:", gene_dist_path, "\n")
 
+# Save object with percent.mt added
+# Saves obj with percent.mt column added to meta.data
+# This is the first checkpoint — 02_filter.R loads from here
+saveRDS(obj, file = paste0(sample_name, "_post_qc.rds"))
+cat("Saved:", paste0(sample_name, "_post_qc.rds"), "\n")
+
 cat("\nQC plots done. Inspect, then proceed to 02_filter.R\n")
