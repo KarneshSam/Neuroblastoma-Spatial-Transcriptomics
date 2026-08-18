@@ -1,8 +1,38 @@
 # 01_qc.R
-# Purpose : Generate QC plots for the selected sample.
-# Output  : Violin plots for nFeature, nCount, percent.mt, and gene count distribution.
-# Requires: obj, sample_name  (from 00_setup.R)
+# Purpose : Load libraries, read RDS, select sample, compute QC
+#           metrics, and save QC plots.
+# Output  : obj, sample_name, plot_dir — used by all downstream scripts
 # ─────────────────────────────────────────────────────────────────
+
+library(Seurat)
+library(ggplot2)
+library(ggrepel)
+library(patchwork)
+library(dplyr)
+library(leiden)
+library(Banksy)
+library(pheatmap)
+library(SeuratWrappers)
+library(clustree)
+library(Matrix)
+
+# Prompt: RDS file path
+repeat {
+  rds_path <- trimws(readline(prompt = "\nEnter path to RDS file: "))
+  if (nchar(rds_path) == 0) {
+    cat("Path cannot be empty.\n"); next
+  }
+  if (!file.exists(rds_path)) {
+    cat("File not found: '", rds_path, "' — please check the path.\n", sep = ""); next
+  }
+  break
+}
+
+###########
+# Load RDS
+############
+cat("Loading:", rds_path, "\n")
+rds_obj <- readRDS(rds_path)
 
 # Mitochondrial percentage per cell
 # High mitochondrial % indicates damaged or dying cells
