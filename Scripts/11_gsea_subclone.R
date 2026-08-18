@@ -231,3 +231,48 @@ for (sc in colnames(avg_expr)) {
 
   all_pathways[[sc]] <- result_df
 }
+
+# ── Save results ──────────────────────────────────────────────────
+if (length(all_pathways) > 0) {
+
+  combined <- bind_rows(all_pathways)
+
+  # All pathways combined
+  write.csv(combined,
+            file.path(output_dir, "gsea_all_subclones.csv"),
+            row.names = FALSE)
+
+  # Split by direction
+  write.csv(combined %>% filter(NES > 0),
+            file.path(output_dir, "gsea_activated_subclones.csv"),
+            row.names = FALSE)
+
+  write.csv(combined %>% filter(NES < 0),
+            file.path(output_dir, "gsea_suppressed_subclones.csv"),
+            row.names = FALSE)
+
+  cat("\nAll pathway tables saved to:", output_dir, "\n")
+  cat("Total significant pathways:", nrow(combined), "\n")
+  cat("High expression:", sum(combined$NES > 0), "\n")
+  cat("Low expression:", sum(combined$NES < 0), "\n")
+  cat("NE type breakdown:\n")
+  print(table(combined$NE_type, combined$direction))
+
+} else {
+  cat("\nNo significant pathways found across any subclone.\n")
+}
+
+# Save full GSEA object list for downstream plotting
+gsea_rds_path <- file.path(output_dir, "gsea_subclone.rds")
+saveRDS(gsea_subclone, gsea_rds_path)
+cat("Saved:", gsea_rds_path, "\n")
+
+# ── Summary ───────────────────────────────────────────────────────
+cat("\n========== SUMMARY ==========\n")
+cat("Sample:                   ", sample_name, "\n")
+cat("Subclones tested:         ", ncol(avg_expr), "\n")
+cat("Subclones with pathways:  ", length(gsea_subclone), "\n")
+cat("Subclones with no result: ",
+    ncol(avg_expr) - length(gsea_subclone), "\n")
+cat("Output saved to:          ", output_dir, "\n")
+cat("==============================\n")
