@@ -579,3 +579,19 @@ cnv_pathway_overlap_arm_gsea <- cnv_pathway_overlap_gsea %>%
       TRUE                ~ paste0(gsub("chr", "", chr), "span")
     )
   )
+
+# Step 4: Build plot data
+# Reshape average expression to long format
+# Normalise subclone name format to match overlap table
+df_mar_long <- df_mar_g %>%
+  dplyr::rename(gene = 1) %>%
+  pivot_longer(
+    cols      = -gene,
+    names_to  = "subclone_raw",
+    values_to = "avg_expr"
+  ) %>%
+  mutate(
+    subclone = str_replace(subclone_raw,
+                           "^([^.]+)\\.([^.]+)\\.(.+)$",
+                           "\\1.\\2-\\3")
+  )
