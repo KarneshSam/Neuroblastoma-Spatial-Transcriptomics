@@ -1,11 +1,17 @@
-suppressPackageStartupMessages({
-  library(Seurat)
-  library(tidyverse)
-  library(clusterProfiler)
-  library(ReactomePA)
-  library(org.Hs.eg.db)
-  library(tibble)
-})
+# 11_gsea_subclone.R
+# Purpose : Run GSEA Reactome per subclone using average expression
+#           as the ranking metric. Loads the NE cells subset saved
+#           by 09_cnv_metadata.R.
+# Requires: sample_name  (from 00_setup.R)
+#           _ne_cells.rds saved by 09_cnv_metadata.R
+# ─────────────────────────────────────────────────────────────────
+
+library(Seurat)
+library(tidyverse)
+library(clusterProfiler)
+library(ReactomePA)
+library(org.Hs.eg.db)
+library(tibble)
 
 ########################
 # Prompt: sample name 
