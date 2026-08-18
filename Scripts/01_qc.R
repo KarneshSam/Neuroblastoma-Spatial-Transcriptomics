@@ -84,6 +84,24 @@ cat("\nLoaded:", sample_name,
     "| Cells:", ncol(obj),
     "| Genes:", nrow(obj), "\n")
 
+# Prompt: plot output directory
+# All plots from this and downstream scripts will be saved here
+# Setting it here once means all scripts use the same directory
+repeat {
+  plot_dir <- trimws(readline(
+    prompt = "\nEnter directory to save plots: "))
+  if (nchar(plot_dir) == 0) {
+    cat("Path cannot be empty.\n"); next
+  }
+  break
+}
+
+# Create plot directory if it does not exist
+if (!dir.exists(plot_dir)) {
+  dir.create(plot_dir, recursive = TRUE)
+  cat("Created plot directory:", plot_dir, "\n")
+}
+
 # Mitochondrial percentage per cell
 # High mitochondrial % indicates damaged or dying cells
 # Genes starting with MT- are mitochondrial in human data
