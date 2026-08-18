@@ -53,3 +53,25 @@ if (!dir.exists(output_dir)) {
   cat("Created output directory:", output_dir, "\n")
 }
 
+
+# Prompt: minimum cells per subclone
+# Subclones with fewer cells than this threshold are excluded
+# Avoids running GSEA on unreliable average expression estimates
+repeat {
+  min_cells_input <- trimws(readline(
+    prompt = "\nMinimum cells per subclone to include (default 10): "))
+
+  # Accept empty input — use default of 10
+  if (nchar(min_cells_input) == 0) {
+    min_cells <- 10
+    cat("Using default: 10\n")
+    break
+  }
+
+  min_cells <- suppressWarnings(as.integer(min_cells_input))
+  if (is.na(min_cells) || min_cells < 1) {
+    cat("Please enter a positive integer.\n"); next
+  }
+  break
+}
+
