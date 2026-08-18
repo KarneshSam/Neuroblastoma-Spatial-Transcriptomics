@@ -425,5 +425,46 @@ scale_fill_cnv <- scale_fill_manual(
   drop     = TRUE
 )
 
+# Step 1: Extract core enrichment genes per subclone
+# core_enrichment contains Entrez IDs separated by "/"
+# Split and convert back to gene symbols for overlap with CNV genes
+cat("\nExtracting core enrichment genes...\n")
+
+gsea_pathway_genes_long <- sig_1_g %>%
+  dplyr::select(subclone, Description, core_enrichment, NES, direction) %>%
+  mutate(entrez = strsplit(core_enrichment, "/")) %>%
+  unnest(entrez) %>%
+  dplyr::select(subclone, Description, entrez, NES, direction)
+
+cat("Total pathway-gene pairs:", nrow(gsea_pathway_genes_long), "\n")
+
+# Convert Entrez IDs to gene symbols
+all_entrez <- unique(gsea_pathway_genes_long$entrez)
+cat("Unique Entrez IDs to convert:", length(all_entrez), "\n")
+
+entrez_to_symbol <- tryCatch({
+  bitr(all_entrez,
+       fromType = "ENTREZID",
+       toType   = "SYMBOL",
+       OrgDb    = org.Hs.eg.db) %>%
+    dplyr::rename(entrez = ENTREZID, gene = SYMBOL)
+}, error = function(e) {
+  cat("bitr error:", conditionMessage(e), "\n")
+  NULL
+})
+
+if (is.null(entrez_to_symbol) || nrow(entrez_to_symbol) == 0) {
+  stop("Failed to convert Entrez IDs to gene symbols.")
+}
+
+cat("Converted", nrow(entrez_to_symbol), "Entrez IDs to symbols\n")
+
+# Join symbols back to pathway-gene table
+gsea_pathway_genes_long <- gsea_pathway_genes_long %>%
+  left_join(entrez_to_symbol, by = "entrez") %>%
+  filter(!is.na(gene)) %>%
+  dplyr::select(subclone, Description, gene, NES, direction)
+
+cat("After symbol join:", nrow(gsea_pathway_genes_long), "rows\n")
 
 
