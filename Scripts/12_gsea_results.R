@@ -567,3 +567,15 @@ ggsave(cnv_bubble_path, p_cnv_bubble,
        limitsize = FALSE)
 cat("Saved:", cnv_bubble_path, "\n")
 
+# Step 3: Add chromosome arm
+# Classify each overlapping gene as p arm, q arm, or spanning
+cnv_pathway_overlap_arm_gsea <- cnv_pathway_overlap_gsea %>%
+  mutate(NE_type = str_extract(subclone, "^[^.]+")) %>%
+  left_join(centromeres, by = "chr") %>%
+  mutate(
+    arm = case_when(
+      end   <= centromere ~ paste0("chr", gsub("chr", "", chr), "p"),
+      start >= centromere ~ paste0("chr", gsub("chr", "", chr), "q"),
+      TRUE                ~ paste0(gsub("chr", "", chr), "span")
+    )
+  )
