@@ -1,8 +1,65 @@
 # 02_filter.R
-# Purpose : Filter the Seurat object based on QC metrics.
-# Output  : Filtered Seurat object with improved data quality.
-# Requires: obj, sample_name  (from 01_qc.R)
+# Purpose : Load post-QC object, filter cells and genes iteratively
+#           based on QC metrics, and save the filtered object.
+# Output  : Filtered Seurat object saved as _post_filter.rds
+# Requires: sample_name, plot_dir  (from 01_qc.R)
 # ─────────────────────────────────────────────────────────────────
+
+library(Seurat)
+library(ggplot2)
+library(ggrepel)
+library(patchwork)
+library(dplyr)
+library(leiden)
+library(Banksy)
+library(pheatmap)
+library(SeuratWrappers)
+library(clustree)
+library(Matrix)
+
+# Prompt: sample name
+# Required to construct file paths for loading and saving
+repeat {
+  sample_name <- trimws(readline(prompt = "\nEnter sample name (e.g. P1, P1.B): "))
+  if (nchar(sample_name) == 0) {
+    cat("Sample name cannot be empty.\n"); next
+  }
+  break
+}
+
+# ── Prompt: input RDS file ────────────────────────────────────────
+# Should be the _post_qc.rds saved by 01_qc.R
+repeat {
+  rds_path <- trimws(readline(
+    prompt = paste0("\nEnter path to ", sample_name, "_post_qc.rds: ")))
+  if (nchar(rds_path) == 0) {
+    cat("Path cannot be empty.\n"); next
+  }
+  if (!file.exists(rds_path)) {
+    cat("File not found: '", rds_path, "'\n", sep = ""); next
+  }
+  break
+}
+
+obj <- readRDS(rds_path)
+cat("Loaded:", rds_path, "\n")
+cat("Cells:", ncol(obj), "| Genes:", nrow(obj), "\n")
+
+# Prompt: plot output directory
+# Must match the directory used in 01_qc.R
+repeat {
+  plot_dir <- trimws(readline(prompt = "\nEnter plot output directory: "))
+  if (nchar(plot_dir) == 0) {
+    cat("Path cannot be empty.\n"); next
+  }
+  if (!dir.exists(plot_dir)) {
+    cat("Directory not found: '", plot_dir, "' — please check.\n", sep = ""); next
+  }
+  break
+}
+
+
+
 
 #####################
 # Filter thresholds
