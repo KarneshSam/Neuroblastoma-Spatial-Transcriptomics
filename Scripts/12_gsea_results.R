@@ -234,3 +234,76 @@ pheatmap(mat_direction,
          border_color             = "grey90")
 dev.off()
 cat("Saved:", heatmap_path, "\n")
+
+#################################################
+# Bubble plot - Pathway enrichment per subclone
+#################################################
+# Prepare bubble data 
+# Truncate long pathway names for readability
+bubble_overall <- sig_1_g %>%
+  mutate(
+    NE_type           = str_extract(subclone, "^[^.]+"),
+    Description_short = case_when(
+      str_length(Description) > 40 ~ paste0(str_sub(Description, 1, 40), "..."),
+      TRUE                         ~ Description
+    ),
+    direction = case_when(
+      NES > 0 ~ "Activated",
+      NES < 0 ~ "Suppressed",
+      TRUE    ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(direction))
+
+# Order subclones by NE type then name for consistent x axis ordering
+# avoids reorder() warning when column is non-numeric
+bubble_overall <- bubble_overall %>%
+  mutate(subclone = factor(subclone,
+                           levels = unique(subclone[order(NE_type, subclone)])))
+
+# ── Build bubble plot ─────────────────────────────────────────────
+# Size  = leading edge gene count (signal strength)
+# Fill  = p.adjust (red = more significant)
+# Shape = direction (triangle up = activated, down = suppressed)
+p_bubble <- ggplot(bubble_overall,
+                   aes(x     = subclone,
+                       y     = Description_short,
+                       size  = leading_edge_count,
+                       fill  = p.adjust,
+                       shape = direction)) +
+  geom_point(alpha = 0.8, stroke = 0.3, color = "grey30") +
+  scale_size_continuous(
+    range = c(2, 8),
+    name  = "Leading edge\ngene count",
+    guide = guide_legend(override.aes = list(shape = 24, fill = "grey50"))
+  ) +
+  scale_fill_gradientn(
+    colours = c("#B2182B", "#F4A582", "#D1E5F0"),
+    values  = scales::rescale(c(0, 0.01, 0.05)),
+    name    = "p.adjust",
+    limits  = c(0, 0.05)
+  ) +
+  scale_shape_manual(
+    values       = c("Activated" = 24, "Suppressed" = 25),
+    na.translate = FALSE,
+    name         = "Direction"
+  ) +
+  facet_grid(. ~ NE_type,
+             scales = "free_x",
+             space  = "free_x") +
+  labs(
+    title = paste("Reactome Pathway Enrichment per Subclone |",
+                  sample_name, "| |NES| >", nes_thresh),
+    x     = "Subclone",
+    y     = "Reactome Pathway"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.x   = element_text(angle = 90, hjust = 1,
+                                 vjust = 0.5, size = 7),
+    axis.text.y   = element_text(size = 7),
+    strip.text    = element_text(face = "bold", size = 10),
+    plot.title    = element_text(face = "bold", hjust = 0.5),
+    panel.spacing = unit(0.3, "lines"),
+    legend.title  = element_text(face = "bold")
+  )
