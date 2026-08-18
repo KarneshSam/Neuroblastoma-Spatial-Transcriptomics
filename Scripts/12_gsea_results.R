@@ -389,3 +389,41 @@ centromeres <- data.frame(
   )
 )
 
+# CNV state helpers
+# Shared colour scale and label function used across all three panels
+cnv_colors <- c(
+  "Complete loss" = "#2166AC",
+  "Loss"          = "#92C5DE",
+  "Neutral"       = "#D9D9D9",
+  "Gain"          = "#F4A582",
+  "2x Gain"       = "#D6604D",
+  "Amplification" = "#B2182B"
+)
+
+cnv_state_order <- c("Complete loss", "Loss", "Neutral",
+                     "Gain", "2x Gain", "Amplification")
+
+# Converts integer CNV state to human-readable label
+label_cnv <- function(state) {
+  case_when(
+    state == 1 ~ "Complete loss",
+    state == 2 ~ "Loss",
+    state == 3 ~ "Neutral",
+    state == 4 ~ "Gain",
+    state == 5 ~ "2x Gain",
+    state == 6 ~ "Amplification",
+    TRUE       ~ "Other"
+  )
+}
+
+# Single shared fill scale reused across p1/p2/p3 so patchwork
+# collects guides into ONE legend
+scale_fill_cnv <- scale_fill_manual(
+  values   = cnv_colors,
+  name     = "CNV state",
+  na.value = "grey90",
+  drop     = TRUE
+)
+
+
+
