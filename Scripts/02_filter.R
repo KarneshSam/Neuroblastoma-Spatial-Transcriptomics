@@ -58,8 +58,71 @@ repeat {
   break
 }
 
+# Prompt: filter thresholds
+# Press Enter to accept the default value shown in brackets
+# Defaults are based on typical spatial transcriptomics thresholds
 
+# Helper function — prompts for a numeric value with a default
+ask_numeric <- function(prompt_text, default_val, min_val = 0) {
+  repeat {
+    input <- trimws(readline(prompt = prompt_text))
+    # Empty input — use default
+    if (nchar(input) == 0) {
+      cat("  Using default:", default_val, "\n")
+      return(default_val)
+    }
+    val <- suppressWarnings(as.numeric(input))
+    if (is.na(val) || val < min_val) {
+      cat("  Invalid — please enter a number >=", min_val, "\n"); next
+    }
+    return(val)
+  }
+}
 
+cat("\n── Filter thresholds ────────────────────────────────────────\n")
+cat("Press Enter to use the default value shown in [brackets].\n\n")
+
+# Minimum unique genes per cell
+min_features <- ask_numeric(
+  prompt_text = "Min unique genes per cell [default: 50]: ",
+  default_val = 50,
+  min_val     = 0
+)
+
+# Minimum unique spatial bins per cell
+min_bins <- ask_numeric(
+  prompt_text = "Min unique spatial bins per cell [default: 3]: ",
+  default_val = 3,
+  min_val     = 0
+)
+
+# Maximum mitochondrial % per cell
+max_mt <- ask_numeric(
+  prompt_text = "Max mitochondrial % per cell [default: 25]: ",
+  default_val = 25,
+  min_val     = 0
+)
+
+# Minimum total counts per gene across all cells
+min_gene_count <- ask_numeric(
+  prompt_text = "Min total counts per gene [default: 50]: ",
+  default_val = 50,
+  min_val     = 0
+)
+
+# Safety cap on number of iterations
+max_iter <- as.integer(ask_numeric(
+  prompt_text = "Max filter iterations [default: 10]: ",
+  default_val = 10,
+  min_val     = 1
+))
+
+cat("\nRunning with thresholds:\n")
+cat(sprintf("  Min features   : %d\n", as.integer(min_features)))
+cat(sprintf("  Min bins       : %d\n", as.integer(min_bins)))
+cat(sprintf("  Max MT %%       : %.1f\n", max_mt))
+cat(sprintf("  Min gene count : %d\n", as.integer(min_gene_count)))
+cat(sprintf("  Max iterations : %d\n", max_iter))
 
 #####################
 # Filter thresholds
