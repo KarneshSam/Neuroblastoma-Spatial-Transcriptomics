@@ -595,3 +595,32 @@ df_mar_long <- df_mar_g %>%
                            "^([^.]+)\\.([^.]+)\\.(.+)$",
                            "\\1.\\2-\\3")
   )
+
+# Dominant CNV state + avg NES + avg expression per NE/subclone/pathway/gene/arm
+plot_data_gsea <- cnv_pathway_overlap_arm_gsea %>%
+  group_by(NE_type, subclone, Description, gene, arm, direction) %>%
+  summarise(
+    dominant_state = as.integer(
+      names(sort(table(state), decreasing = TRUE)[1])),
+    avg_NES = mean(NES),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    cnv_label = factor(label_cnv(dominant_state),
+                       levels = cnv_state_order)
+  ) %>%
+  left_join(
+    df_mar_long %>% dplyr::select(subclone, gene, avg_expr),
+    by = c("subclone", "gene")
+  ) %>%
+  mutate(
+    Description_short = case_when(
+      str_length(Description) > 45 ~
+        paste0(str_sub(Description, 1, 45), "..."),
+      TRUE ~ Description
+    )
+  )
+
+cat("\nPlot data dimensions:", nrow(plot_data_gsea), "\n")
+cat("NE type breakdown:\n")
+print(table(plot_data_gsea$NE_type))
