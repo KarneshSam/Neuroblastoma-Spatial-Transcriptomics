@@ -75,3 +75,25 @@ repeat {
   break
 }
 
+# Load NE cells object 
+cat("\nLoading:", rds_path, "\n")
+ne_cells <- readRDS(rds_path)
+cat("Loaded:", sample_name,
+    "| Cells:", ncol(ne_cells),
+    "| Genes:", nrow(ne_cells), "\n")
+
+# Filter valid subclones (cell counts >= min_cells)
+# Remove subclones with too few cells for reliable average expression
+cat("Setting identities to infercnv_subclone...\n")
+Idents(ne_cells) <- "infercnv_subclone"
+
+subclone_sizes  <- table(ne_cells@meta.data$infercnv_subclone)
+valid_subclones <- names(subclone_sizes[subclone_sizes >= min_cells])
+
+cat("Valid subclones (>=", min_cells, "cells):", length(valid_subclones), "\n")
+cat("Removed subclones (<", min_cells, "cells):",
+    sum(subclone_sizes < min_cells), "\n")
+
+# Subset NE cells to only include valid subclones
+ne_cells_filtered <- subset(ne_cells,
+                             infercnv_subclone %in% valid_subclones)
