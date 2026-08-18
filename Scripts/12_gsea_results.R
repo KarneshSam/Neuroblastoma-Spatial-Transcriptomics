@@ -485,3 +485,23 @@ cnv_pathway_overlap_gsea <- gsea_pathway_genes_long %>%
 
 cat("CNV-pathway overlaps:", nrow(cnv_pathway_overlap_gsea), "\n")
 
+# Summarise overlaps per subclone + pathway + direction
+all_conf <- cnv_pathway_overlap_gsea %>%
+  group_by(subclone, Description, direction) %>%
+  summarise(
+    n_genes        = n_distinct(gene),
+    genes          = paste(unique(gene), collapse = "/"),
+    dominant_state = as.integer(
+      names(sort(table(state), decreasing = TRUE)[1])),
+    avg_NES        = mean(NES),
+    .groups        = "drop"
+  ) %>%
+  mutate(
+    NE_type           = str_extract(subclone, "^[^.]+"),
+    Description_short = case_when(
+      str_length(Description) > 40 ~
+        paste0(str_sub(Description, 1, 40), "..."),
+      TRUE ~ Description
+    )
+  )
+
