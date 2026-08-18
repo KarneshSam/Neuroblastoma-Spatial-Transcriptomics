@@ -209,3 +209,48 @@ for (pkg in bioc_packages) {
   install_if_missing(pkg, "Bioconductor")
 }
 
+# STEP 5 — Verify all packages load correctly
+cat("\nStep 5: Verification\n")
+
+all_packages <- c(cran_packages, bioc_packages)
+failed       <- c()
+
+for (pkg in all_packages) {
+  ok <- tryCatch({
+    suppressPackageStartupMessages(
+      library(pkg, character.only = TRUE))
+    TRUE
+  }, error = function(e) FALSE)
+
+  if (ok) {
+    cat(sprintf("  %-30s OK\n", pkg))
+  } else {
+    cat(sprintf("  %-30s FAILED\n", pkg))
+    failed <- c(failed, pkg)
+  }
+}
+
+# STEP 6 — Summary
+cat("\n==========================================================\n")
+cat(" Summary\n")
+cat("==========================================================\n")
+cat("Total packages checked :", length(all_packages), "\n")
+cat("Successfully loaded    :", length(all_packages) - length(failed), "\n")
+cat("Failed                 :", length(failed), "\n")
+
+if (length(failed) > 0) {
+  cat("\nPackages that failed:\n")
+  for (pkg in failed) {
+    cat("  -", pkg, "\n")
+  }
+  cat("\nCommon fixes:\n")
+  cat("  CRAN:         install.packages('pkg_name')\n")
+  cat("  Bioconductor: BiocManager::install('pkg_name')\n")
+  cat("  System dep:   sudo apt-get install lib<name>-dev\n")
+  cat("  Java issue:   sudo R CMD javareconf\n")
+  cat("  leiden/Python: pip3 install leidenalg igraph\n")
+} else {
+  cat("\nAll packages installed and verified.\n")
+  cat("You can now run: Rscript 01_qc.R\n")
+}
+cat("==========================================================\n")
