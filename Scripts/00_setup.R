@@ -155,3 +155,38 @@ install_if_missing <- function(pkg, source = "CRAN", repo = NULL) {
 install_if_missing("BiocManager", "CRAN")
 install_if_missing("remotes",     "CRAN")
 
+# STEP 3 — CRAN packages
+
+cat("\nStep 3: CRAN packages\n")
+
+cran_packages <- c(
+  # Core data wrangling
+  "dplyr",        # Data manipulation
+  "tidyr",        # Reshaping (pivot_wider, pivot_longer)
+  "tibble",       # Modern data frames
+  "stringr",      # String manipulation
+  "tidyverse",    # Meta-package (ggplot2, dplyr, tidyr etc.)
+  "scales",       # Scale functions for ggplot2
+
+  # Plotting
+  "ggplot2",      # Core plotting
+  "ggrepel",      # Non-overlapping text labels
+  "patchwork",    # Combining multiple ggplots
+  "pheatmap",     # Heatmaps
+  "RColorBrewer", # Colour palettes
+  "ggh4x",        # Extended ggplot2 axes (guide_axis_color)
+
+  # Bioinformatics utilities
+  "Matrix",       # Sparse matrix operations
+  "leiden",       # Leiden clustering algorithm
+  "RANN",         # Fast nearest neighbour search
+
+  # Seurat ecosystem
+  "Seurat",       # Core single-cell / spatial analysis
+  "clustree"      # Cluster resolution visualisation
+)
+
+for (pkg in cran_packages) {
+  install_if_missing(pkg, "CRAN")
+}
+
