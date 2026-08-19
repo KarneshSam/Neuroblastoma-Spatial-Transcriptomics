@@ -262,3 +262,22 @@ threshold prompts show a default value; press **Enter** to accept it.
 |------|-------------|
 | `<sample>_annotated.rds` | Final annotated Seurat object with `cell_type_hr` column |
 
+---
+
+## Notes
+
+- Run all scripts from the **project root directory**, not from inside `scripts/`.
+- Process **one sample at a time** — each script prompts for sample selection.
+- **This pipeline is designed specifically for this dataset.** The Seurat object
+  has been structured and modified for compatibility with these scripts. It is
+  not guaranteed to work out of the box with other datasets without adjustments
+  to assay names, metadata columns, and file formats.
+- `_post_banksy.rds` is the heaviest checkpoint — avoid deleting it as it
+  takes the longest to regenerate.
+- InferCNV is computationally intensive; adjust `num_threads` in
+  `08_infercnv_pipeline.R` to match your system.
+- Script `14_liana.py` requires a separate Python environment with liana,
+  squidpy, anndata, and pyCirclize installed.
+- For the installation of packages the AI language is used for building the 00_setup.R
+
+---
