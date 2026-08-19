@@ -2,6 +2,7 @@
 # Purpose : Run Leiden clustering at 5 user-defined resolutions,
 #           then plot clustree to visualise cluster stability.
 #           Use clustree to decide which resolution to use in 05b.
+# Output  : results/tmp/<sample>/<sample>_post_cluster.rds
 # Requires: sample_name  (from 00_setup.R)
 # ─────────────────────────────────────────────────────────────────
 
