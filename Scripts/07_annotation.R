@@ -4,7 +4,7 @@
 #           handles duplicate labels with confirmation, adds a
 #           cell_type column, generates labelled plots, and saves
 #           the annotated object.
-# Output  : results/annotated_obj/<sample>_annotated_<res>.rds
+# Output  : results/annotated_obj/<sample>_annotated.rds
 # Requires: sample_name  (from 00_setup.R)
 # ─────────────────────────────────────────────────────────────────
 
@@ -185,7 +185,7 @@ cat("Saved: Spatial split annotated plot\n")
 # Save annotated object
 # Final object with cell_type column added to meta.data
 out_rds <- file.path(out_dir,
-                     paste0(sample_name, "_annotated_", chosen_res, ".rds"))
+                     paste0(sample_name, "_annotated.rds"))
 saveRDS(obj, file = out_rds)
 cat("Saved:", out_rds, "\n")
  
