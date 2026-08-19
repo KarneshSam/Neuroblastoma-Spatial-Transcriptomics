@@ -91,11 +91,16 @@ for (res in resolutions) {
 # Visualises how cells move between clusters as resolution increases
 # Stable resolutions show clean, non-mixing branches
 # Use this plot to pick your preferred resolution for 05b
-clustree(obj, prefix = "banksy_lam0.2_res") +
+p_clustree <- clustree(obj, prefix = "banksy_lam0.2_res") +
   ggtitle(paste("Clustree —", sample_name))
+
+ggsave(file.path(tmp_dir, paste0(sample_name, "_clustree.pdf")),
+       p_clustree, width = 12, height = 10)
+cat("Saved: Clustree plot\n")
 
 # Saves obj with all 5 resolution cluster columns added to meta.data
 # Both 05b_plots.R and 06_markers.R load from this file
-saveRDS(obj, file = paste0(sample_name, "_post_cluster.rds"))
-cat("\nSaved:", paste0(sample_name, "_post_cluster.rds"), "\n")
+out_rds <- file.path(tmp_dir, paste0(sample_name, "_post_cluster.rds"))
+saveRDS(obj, file = out_rds)
+cat("\nSaved:", out_rds, "\n")
 cat("Inspect the clustree, then proceed to 05b_plots.R\n")
