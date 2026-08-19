@@ -80,11 +80,15 @@ obj <- RunPCA(obj,
               reduction.name = "pca.banksy.0.2")
 
 # Visualise top genes driving the first 4 PCs
-VizDimLoadings(obj,
-               reduction = "pca.banksy.0.2",
-               nfeatures = 5,
-               dims      = 1:4) +
+p_pca <- VizDimLoadings(obj,
+                        reduction = "pca.banksy.0.2",
+                        nfeatures = 5,
+                        dims      = 1:4) +
   plot_annotation(title = paste("PCA loadings —", sample_name))
+
+ggsave(file.path(tmp_dir, paste0(sample_name, "_pca_loadings.pdf")),
+       p_pca, width = 12, height = 8)
+cat("Saved: PCA loadings plot\n")
 
 #############
 # kNN graph
