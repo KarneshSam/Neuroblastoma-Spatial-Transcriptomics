@@ -2,8 +2,50 @@
 # Purpose: Run BANKSY spatial embedding, PCA, kNN graph, and UMAP.
 #           Saves the complete object to disk — this is the main
 #           checkpoint. 05a onwards loads from this RDS.
+# Output  : results/tmp/<sample>/<sample>_post_banksy.rds
 # Requires: obj, sample_name  (from 03_normalise.R)
 # ─────────────────────────────────────────────────────────────────
+
+library(Seurat)
+library(ggplot2)
+library(ggrepel)
+library(patchwork)
+library(dplyr)
+library(leiden)
+library(Banksy)
+library(pheatmap)
+library(SeuratWrappers)
+library(clustree)
+library(Matrix)
+
+# Prompt: sample name
+repeat {
+  sample_name <- trimws(readline(prompt = "\nEnter sample name (e.g. P1, P1.B): "))
+  if (nchar(sample_name) == 0) {
+    cat("Sample name cannot be empty.\n"); next
+  }
+  break
+}
+
+# Load checkpoint
+# Loads the object saved at the end of 03_normalise.R
+in_rds <- file.path("results", "tmp", sample_name,
+                    paste0(sample_name, "_post_normalise.rds"))
+if (!file.exists(in_rds)) {
+  stop("File not found: ", in_rds,
+       "\nPlease run 03_normalise.R first.")
+}
+ 
+obj <- readRDS(in_rds)
+cat("Loaded:", in_rds, "\n")
+cat("Cells:", ncol(obj), "| Genes:", nrow(obj), "\n")
+
+# Output directory 
+tmp_dir <- file.path("results", "tmp", sample_name)
+
+if (!dir.exists(tmp_dir)) {
+  dir.create(tmp_dir, recursive = TRUE)
+}
 
 # Set the default assay
 DefaultAssay(obj) <- "Spatial.Polygons"
@@ -70,6 +112,7 @@ obj <- RunUMAP(obj,
 #   - umap.banksy.0.2 reduction
 #   - BANKSY.0.2l_snn and _nn graphs
 #   - All meta.data columns (percent.mt, nFeature_fresh, etc.)
-saveRDS(obj, file = paste0(sample_name, "_post_banksy.rds"))
-cat("Saved:", paste0(sample_name, "_post_banksy.rds"), "\n")
+out_rds <- file.path(tmp_dir, paste0(sample_name, "_post_banksy.rds"))
+saveRDS(obj, file = out_rds)
+cat("Saved:", out_rds, "\n")
 cat("Proceed to 05a_cluster_clustree.R\n")
