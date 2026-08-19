@@ -134,3 +134,39 @@ the pipeline handles both automatically.
             └── lr_inflow_scores.pdf
 ```
 
+---
+
+## Required Software
+
+### R Pipeline (scripts 00–13)
+
+| Package | Source | Purpose |
+|---------|--------|---------|
+| Seurat | CRAN | Core single-cell / spatial analysis |
+| SeuratWrappers | Bioconductor | RunBanksy extension |
+| Banksy | Bioconductor | Spatial neighbourhood embedding |
+| clustree | CRAN | Cluster resolution visualisation |
+| leiden | CRAN | Leiden clustering algorithm |
+| Matrix | CRAN | Sparse matrix operations |
+| infercnv | Bioconductor | Copy number variation inference |
+| rtracklayer | Bioconductor | GTF file import |
+| clusterProfiler | Bioconductor | GSEA framework |
+| ReactomePA | Bioconductor | Reactome pathway analysis |
+| org.Hs.eg.db | Bioconductor | Human gene ID conversion |
+| ggplot2 / ggrepel / patchwork | CRAN | Plotting |
+| pheatmap / RColorBrewer / ggh4x | CRAN | Heatmaps and colour palettes |
+| RANN | CRAN | Spatial nearest neighbour search |
+| dplyr / tidyr / tibble / stringr / tidyverse / scales | CRAN | Data wrangling |
+
+### Python Pipeline (script 14)
+
+| Package | Purpose |
+|---------|---------|
+| liana 1.2 | Cell-cell communication analysis |
+| squidpy 1.8.3 | Spatially variable gene detection |
+| anndata | AnnData object handling |
+| pyCirclize | Chord diagram visualisation |
+
+---
+
+
