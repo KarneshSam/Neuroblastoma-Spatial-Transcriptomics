@@ -262,6 +262,43 @@ threshold prompts show a default value; press **Enter** to accept it.
 |------|-------------|
 | `<sample>_annotated.rds` | Final annotated Seurat object with `cell_type_hr` column |
 
+### `results/subclone/<sample_name>/` — CNV metadata
+
+| File | Description |
+|------|-------------|
+| `<sample>_post_cnv_meta.rds` | Object with chromosome and arm CNV state columns |
+| `<sample>_ne_cells.rds` | NE (tumour) cells subset |
+| `<sample>_cnv_chr_state_barplot.pdf` | CNV state proportion per chromosome |
+| `<sample>_cnv_arm_state_barplot.pdf` | CNV state proportion per arm |
+| `<sample>_cnv_directionality_all_arms.pdf` | Directionality score heatmap — all arms |
+| `<sample>_cnv_directionality_classic_arms.pdf` | Directionality score heatmap — focused arms |
+
+### `results/gsea/<sample_name>/` — GSEA
+
+| File | Description |
+|------|-------------|
+| `avg_expression_per_subclone.csv` | Average normalised expression per subclone |
+| `gsea_all_subclones.csv` | All significant pathways |
+| `gsea_filtered_nes<X>.csv` | Pathways at chosen NES threshold |
+| `gsea_subclone.rds` | Full GSEA result objects |
+| `<sample>_gsea_pathway_heatmap.pdf` | Pathway direction heatmap |
+| `<sample>_gsea_bubble_plot.pdf` | Enrichment bubble plot |
+| `<sample>_<NE>_gsea_core_enrichment.png` | Per-NE CNV + expression + pathway panel |
+
+### `results/neighbour/` — Neighbourhood
+
+| File | Description |
+|------|-------------|
+| `<sample>_neighbourhood_composition.png` | Neighbour proportion bar plots per NE subtype |
+
+### `results/liana/<sample_name>/` — Cell-cell communication
+
+| File | Description |
+|------|-------------|
+| `chord_diagram_overall.png` | Overall signalling network |
+| `chord_diagram_<cell_type>.png` | Cell-type-specific signalling |
+| `lr_inflow_scores.pdf` | Ligand-receptor inflow scores |
+
 ---
 
 ## Notes
@@ -281,3 +318,12 @@ threshold prompts show a default value; press **Enter** to accept it.
 - For the installation of packages the AI language is used for building the 00_setup.R
 
 ---
+
+## People Involved
+
+| Role | Name |
+|------|------|
+| Student | Karnesh Sampath |
+| Supervisor | Dr Joachim Tetteh Siaw |
+| Lab PI | Prof Daniel Bexell |
+| Course | BINP 37, 15 credits, Lund University |
