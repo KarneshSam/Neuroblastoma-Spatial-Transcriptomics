@@ -2,7 +2,7 @@
 # Purpose : Find marker genes for each cluster at the chosen
 #           resolution, extract top 5 per cluster, plot DotPlot,
 #           and save marker tables as CSV files.
-# Output  : results/tmp/<sample>/<sample>_final_<res>.rds
+# Output  : results/tmp/<sample>/<sample>_final.rds
 #           results/tmp/<sample>/markers_<sample>_<res>.csv
 #           results/tmp/<sample>/top10markers_<sample>_<res>.csv
 # Requires: sample_name  (from 00_setup.R)
@@ -155,7 +155,7 @@ cat("Kept:", chosen_res, "\n")
 # Save the final object
 # Named with sample name and chosen resolution for full traceability
 # 07_annotation.R loads from this file
-out_rds <- file.path(tmp_dir, paste0(sample_name, "_final_", chosen_res, ".rds"))
+out_rds <- file.path(tmp_dir, paste0(sample_name, "_final.rds"))
 saveRDS(obj, file = out_rds)
 cat("Saved:", out_rds, "\n")
 cat("Proceed to 07_annotation.R\n")
