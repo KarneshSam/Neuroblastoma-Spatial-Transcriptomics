@@ -169,4 +169,58 @@ the pipeline handles both automatically.
 
 ---
 
+## Quick Start
+
+### 1. Install all R dependencies (run once)
+
+```bash
+Rscript scripts/00_setup.R
+```
+
+Installs all system-level (Ubuntu/Debian) and R package dependencies and
+verifies they load correctly.
+
+### 2. Run the pipeline
+
+Run all scripts from the **project root directory**:
+
+```bash
+Rscript scripts/01_qc.R
+Rscript scripts/02_filter.R
+Rscript scripts/03_normalise.R
+Rscript scripts/04_banksy_pca_umap.R
+Rscript scripts/05a_cluster_clustree.R
+Rscript scripts/05b_plots.R
+Rscript scripts/06_markers.R
+Rscript scripts/07_annotation.R
+Rscript scripts/08_infercnv_pipeline.R
+Rscript scripts/09_cnv_downstream_analysis.R
+Rscript scripts/10_cnv_metadata.R
+Rscript scripts/11_gsea_subclone.R
+Rscript scripts/12_gsea_results.R
+Rscript scripts/13_neighbourhood.R
+python scripts/14_liana.py
+```
+
+Each script prompts you interactively for inputs — input file, sample
+selection, thresholds, and output directories. No hardcoded paths. All
+threshold prompts show a default value; press **Enter** to accept it.
+
+---
+
+## Workflow
+
+### Stage 1 — Preprocessing (scripts 01–07)
+
+| Script | What it does |
+|--------|-------------|
+| `01_qc.R` | Loads RDS, selects sample, computes mitochondrial %, generates QC violin plots and gene count distribution |
+| `02_filter.R` | Iteratively filters low-quality cells (gene count, spatial bins, MT%) and lowly expressed genes until convergence |
+| `03_normalise.R` | LogNormalizes counts (scale factor 10,000), identifies top 2,000 HVGs using VST, scales data regressing out MT% |
+| `04_banksy_pca_umap.R` | Runs BANKSY spatial embedding (λ=0.2, k=50 neighbours), PCA (30 PCs), kNN graph, and UMAP |
+| `05a_cluster_clustree.R` | Runs Leiden clustering at 5 user-defined resolutions; plots clustree to assess stability |
+| `05b_plots.R` | Generates UMAP, spatial ImageDimPlot, and SNN connectivity heatmap for the chosen resolution |
+| `06_markers.R` | Finds marker genes per cluster (Wilcoxon, only.pos, min.pct=0.25, logFC≥0.25, adj p<0.05), plots DotPlot |
+| `07_annotation.R` | Interactively labels each cluster with a cell type name; saves final annotated object to `results/annotated_obj/` |
+
 
