@@ -27,35 +27,28 @@ repeat {
   break
 }
 
-# Prompt: input RDS file 
+# Input RDS file 
 # Should be the _post_qc.rds saved by 01_qc.R
-repeat {
-  rds_path <- trimws(readline(
-    prompt = paste0("\nEnter path to ", sample_name, "_post_qc.rds: ")))
-  if (nchar(rds_path) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!file.exists(rds_path)) {
-    cat("File not found: '", rds_path, "'\n", sep = ""); next
-  }
-  break
+in_rds <- file.path("results", "tmp", sample_name,
+                    paste0(sample_name, "_post_qc.rds"))
+if (!file.exists(in_rds)) {
+  stop("File not found: ", in_rds,
+       "\nPlease run 01_qc.R first.")
 }
 
-obj <- readRDS(rds_path)
-cat("Loaded:", rds_path, "\n")
-cat("Cells:", ncol(obj), "| Genes:", nrow(obj), "\n")
+obj <- readRDS(in_rds)
+cat("Loaded:", in_rds, "\n")
+cat("Before filtering:", ncol(obj), "cells |", nrow(obj), "genes\n")
 
-# Prompt: plot output directory
+# Set default assay
+DefaultAssay(obj) <- "Spatial.Polygons"
+
+# plot output directory
 # Must match the directory used in 01_qc.R
-repeat {
-  plot_dir <- trimws(readline(prompt = "\nEnter plot output directory: "))
-  if (nchar(plot_dir) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!dir.exists(plot_dir)) {
-    cat("Directory not found: '", plot_dir, "' — please check.\n", sep = ""); next
-  }
-  break
+tmp_dir <- file.path("results", "tmp", sample_name)
+
+if (!dir.exists(tmp_dir)) {
+  dir.create(tmp_dir, recursive = TRUE)
 }
 
 # Prompt: filter thresholds
@@ -211,14 +204,15 @@ p_filter <- (p1 | p2 | p3) +
     theme = theme(plot.title = element_text(size = 14, hjust = 0.5,
                                             face = "bold")))
 
-filter_plot_path <- file.path(plot_dir,
+filter_plot_path <- file.path(tmp_dir,
   paste0(sample_name, "_post_filter_qc.pdf"))
 ggsave(filter_plot_path, p_filter, width = 14, height = 5)
 cat("Saved:", filter_plot_path, "\n")
 
 # Save filtered object
 # 03_normalise.R loads from this file
-saveRDS(obj, file = paste0(sample_name, "_post_filter.rds"))
-cat("Saved:", paste0(sample_name, "_post_filter.rds"), "\n")
-cat("Proceed to 03_normalise.R\n")
+out_rds <- file.path(tmp_dir, paste0(sample_name, "_post_filter.rds"))
+saveRDS(obj, file = out_rds)
+cat("Saved:", out_rds, "\n")
 
+cat("Proceed to 03_normalise.R\n")
