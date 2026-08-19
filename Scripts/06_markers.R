@@ -2,13 +2,51 @@
 # Purpose : Find marker genes for each cluster at the chosen
 #           resolution, extract top 5 per cluster, plot DotPlot,
 #           and save marker tables as CSV files.
+# Output  : results/tmp/<sample>/<sample>_final_<res>.rds
+#           results/tmp/<sample>/markers_<sample>_<res>.csv
+#           results/tmp/<sample>/top10markers_<sample>_<res>.csv
 # Requires: sample_name  (from 00_setup.R)
 # Note    : Can be run at a different resolution than 05b if needed
 # ─────────────────────────────────────────────────────────────────
 
-# Load the clustered dataset (contains different clusters)
-obj <- readRDS(paste0(sample_name, "_post_cluster.rds"))
-cat("Loaded:", paste0(sample_name, "_post_cluster.rds"), "\n")
+library(Seurat)
+library(ggplot2)
+library(ggrepel)
+library(patchwork)
+library(dplyr)
+library(leiden)
+library(Banksy)
+library(pheatmap)
+library(SeuratWrappers)
+library(clustree)
+library(Matrix)
+
+# Prompt: sample name
+repeat {
+  sample_name <- trimws(readline(prompt = "\nEnter sample name (e.g. P1, P1.B): "))
+  if (nchar(sample_name) == 0) {
+    cat("Sample name cannot be empty.\n"); next
+  }
+  break
+}
+ 
+# Load checkpoint 
+# Loads the object saved at the end of 05a_cluster_clustree.R
+in_rds <- file.path("results", "tmp", sample_name,
+                    paste0(sample_name, "_post_cluster.rds"))
+if (!file.exists(in_rds)) {
+  stop("File not found: ", in_rds,
+       "\nPlease run 05a_cluster_clustree.R first.")
+}
+ 
+obj <- readRDS(in_rds)
+cat("Loaded:", in_rds, "\n")
+ 
+# Output directory
+tmp_dir <- file.path("results", "tmp", sample_name)
+
+# Set default assay
+DefaultAssay(obj) <- "Spatial.Polygons"
 
 # Show available resolutions - for the user
 # Finds all resolution columns added by 05a in obj@meta.data
