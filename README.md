@@ -227,3 +227,20 @@ threshold prompts show a default value; press **Enter** to accept it.
 | `09_cnv_downstream_analysis.R` | Computes per-cell CNV variance scores, assigns HMM subclone labels, summarises dominant CNV state per chromosome and arm, generates heatmaps |
 | `10_cnv_metadata.R` | Adds chromosome and arm-level CNV states to metadata, computes directionality scores (proportion gain − proportion loss), subsets NE cells |
 
+### Stage 3 — GSEA (scripts 11–12)
+
+| Script | What it does |
+|--------|-------------|
+| `11_gsea_subclone.R` | Computes average expression per subclone, converts to Entrez IDs, runs gsePathway (Reactome) ranked by expression per subclone |
+| `12_gsea_results.R` | Filters by p.adjust < 0.05, applies user-defined NES threshold, generates pathway heatmap and bubble plot, overlaps core enrichment genes with InferCNV CNV genes, produces per-NE combined plots |
+
+### Stage 4 — Spatial Analysis (scripts 13–14)
+
+| Script | What it does |
+|--------|-------------|
+| `13_neighbourhood.R` | Fixed-radius nearest-neighbour search (RANN, r=200 µm, k=100) per NE subtype; computes neighbour type proportions; plots stacked bar charts coloured by cell class |
+| `14_liana.py` | Builds spatial neighbourhood graphs, detects spatially variable genes (Moran's I), computes ligand-receptor inflow scores, generates chord diagrams  |
+
+---
+
+
