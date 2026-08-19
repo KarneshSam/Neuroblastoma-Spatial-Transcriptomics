@@ -5,10 +5,45 @@
 # Requires: sample_name  (from 00_setup.R)
 # ─────────────────────────────────────────────────────────────────
 
-# Load the Pre-processed seurat object
-# This should contain the BANKSY assay, PCA, UMAP reductions and kNN graph
-obj <- readRDS(paste0(sample_name, "_post_banksy.rds"))
-cat("Loaded:", paste0(sample_name, "_post_banksy.rds"), "\n")
+library(Seurat)
+library(ggplot2)
+library(ggrepel)
+library(patchwork)
+library(dplyr)
+library(leiden)
+library(Banksy)
+library(pheatmap)
+library(SeuratWrappers)
+library(clustree)
+library(Matrix)
+
+# Prompt: sample name
+repeat {
+  sample_name <- trimws(readline(prompt = "\nEnter sample name (e.g. P1, P1.B): "))
+  if (nchar(sample_name) == 0) {
+    cat("Sample name cannot be empty.\n"); next
+  }
+  break
+}
+
+# Load checkpoint
+# Loads the object saved at the end of 04_banksy_pca_umap.R
+# Contains BANKSY embedding, PCA, UMAP, and kNN graph
+in_rds <- file.path("results", "tmp", sample_name,
+                    paste0(sample_name, "_post_banksy.rds"))
+if (!file.exists(in_rds)) {
+  stop("File not found: ", in_rds,
+       "\nPlease run 04_banksy_pca_umap.R first.")
+}
+
+obj <- readRDS(in_rds)
+cat("Loaded:", in_rds, "\n")
+
+# Output directory
+tmp_dir <- file.path("results", "tmp", sample_name)
+
+# Set default assay
+DefaultAssay(obj) <- "BANKSY.0.2l"
 
 # Prompt: enter 5 resolutions
 # Higher resolution = more clusters, lower = fewer
