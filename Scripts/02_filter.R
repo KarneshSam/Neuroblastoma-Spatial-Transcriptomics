@@ -1,8 +1,9 @@
 # 02_filter.R
 # Purpose : Load post-QC object, filter cells and genes iteratively
 #           based on QC metrics, and save the filtered object.
-# Output  : Filtered Seurat object saved as _post_filter.rds
-# Requires: sample_name, plot_dir  (from 01_qc.R)
+# Output  : results/tmp/<sample>/<sample>_post_filter.rds
+#           results/tmp/<sample>/<sample>_post_filter_qc.pdf
+# Requires: sample_name, tmp_dir  (from 01_qc.R)
 # ─────────────────────────────────────────────────────────────────
 
 library(Seurat)
