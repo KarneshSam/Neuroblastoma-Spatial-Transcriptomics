@@ -219,4 +219,11 @@ threshold prompts show a default value; press **Enter** to accept it.
 | `06_markers.R` | Finds marker genes per cluster (Wilcoxon, only.pos, min.pct=0.25, logFC≥0.25, adj p<0.05), plots DotPlot |
 | `07_annotation.R` | Interactively labels each cluster with a cell type name; saves final annotated object to `results/annotated_obj/` |
 
+### Stage 2 — CNV Inference (scripts 08–10)
+
+| Script | What it does |
+|--------|-------------|
+| `08_infercnv_pipeline.R` | Generates gene order file from Gencode GTF; runs InferCNV with HMM state calling (6 states), denoising, and user-defined cutoff |
+| `09_cnv_downstream_analysis.R` | Computes per-cell CNV variance scores, assigns HMM subclone labels, summarises dominant CNV state per chromosome and arm, generates heatmaps |
+| `10_cnv_metadata.R` | Adds chromosome and arm-level CNV states to metadata, computes directionality scores (proportion gain − proportion loss), subsets NE cells |
 
