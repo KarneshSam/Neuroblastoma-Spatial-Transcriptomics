@@ -243,4 +243,22 @@ threshold prompts show a default value; press **Enter** to accept it.
 
 ---
 
+## Output Files
+
+### `results/tmp/<sample_name>/` — Intermediate checkpoints
+
+| File | Description |
+|------|-------------|
+| `<sample>_post_qc.rds` | Object with percent.mt added |
+| `<sample>_post_filter.rds` | Filtered object |
+| `<sample>_post_normalise.rds` | Normalised and scaled object |
+| `<sample>_post_banksy.rds` | BANKSY + PCA + UMAP + kNN |
+| `<sample>_post_cluster.rds` | All cluster resolutions added |
+| `<sample>_final.rds` | Single chosen resolution, clean |
+
+### `results/annotated_obj/` — Final object
+
+| File | Description |
+|------|-------------|
+| `<sample>_annotated.rds` | Final annotated Seurat object with `cell_type_hr` column |
 
