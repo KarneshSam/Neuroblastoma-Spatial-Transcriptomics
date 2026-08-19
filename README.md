@@ -34,3 +34,15 @@ pipeline integrates CNV analysis with spatial context to examine how the
 surrounding microenvironment shapes clonal dynamics and tumour heterogeneity.
 
 ---
+
+## Data Description
+
+### Input Data
+
+A Seurat object containing the cell × gene count matrix output from SpaceRanger
+and ENACT cell segmentation, stored under the assay name `Spatial.Polygons`.
+The file may contain a single Seurat object or a named list of Seurat objects —
+the pipeline handles both automatically.
+
+---
+
