@@ -82,7 +82,7 @@ the pipeline handles both automatically.
     │       ├── <sample>_post_cluster.rds
     │       └── <sample>_final.rds
     │
-    ├── <sample_name>/
+    ├── <annotated_obj>/
     │     └──<sample>_annotated.rds   # Final annotated object (07)
     │
     ├── <infercnv_output_dir>/                 # InferCNV outputs (08)
@@ -93,12 +93,13 @@ the pipeline handles both automatically.
     │        └── 17_HMM_predHMMi6.leiden.*
     │
     ├── <cnv_downstream_output_dir>/           # CNV downstream plots (09)
-    │   ├── <sample>_cnv_chr_wide.csv
-    │   ├── <sample>_cnv_arm_wide.csv
-    │   ├── <sample>_cnv_landscape_heatmap.pdf
-    │   ├── <sample>_cnv_arm_landscape_heatmap.pdf
-    │   ├── <sample>_infercnv_subclones_spatial.pdf
-    │   └── <sample>_post_cnv.rds
+    │   └── infercnv_<sample_name>/
+    │       ├── <sample>_cnv_chr_wide.csv
+    │       ├── <sample>_cnv_arm_wide.csv
+    │       ├── <sample>_cnv_landscape_heatmap.pdf
+    │       ├── <sample>_cnv_arm_landscape_heatmap.pdf
+    │       ├── <sample>_infercnv_subclones_spatial.pdf
+    │       └── <sample>_post_cnv.rds
     │
     ├── subclone/
     │   └── <sample_name>/                     # CNV metadata outputs (10)
