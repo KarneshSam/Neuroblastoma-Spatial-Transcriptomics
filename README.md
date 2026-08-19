@@ -46,3 +46,91 @@ the pipeline handles both automatically.
 
 ---
 
+## Directory Structure
+
+```
+.
+├── data/
+│   ├── seu_enact_seg_unprocessed.rds         # Input Seurat RDS
+│   └── gencode.v44.basic.annotation.gtf.gz   # Gencode GTF for InferCNV
+│
+├── scripts/
+│   ├── 00_setup.R                             # Install all dependencies
+│   ├── 01_qc.R
+│   ├── 02_filter.R
+│   ├── 03_normalise.R
+│   ├── 04_banksy_pca_umap.R
+│   ├── 05a_cluster_clustree.R
+│   ├── 05b_plots.R
+│   ├── 06_markers.R
+│   ├── 07_annotation.R
+│   ├── 08_infercnv_pipeline.R
+│   ├── 09_cnv_downstream_analysis.R
+│   ├── 10_cnv_metadata.R
+│   ├── 11_gsea_subclone.R
+│   ├── 12_gsea_results.R
+│   ├── 13_neighbourhood.R
+│   └── 14_liana.py
+│
+└── results/
+    ├── tmp/
+    │   └── <sample_name>/                     # Intermediate checkpoints (01–06)
+    │       ├── <sample>_post_qc.rds
+    │       ├── <sample>_post_filter.rds
+    │       ├── <sample>_post_normalise.rds
+    │       ├── <sample>_post_banksy.rds
+    │       ├── <sample>_post_cluster.rds
+    │       └── <sample>_final_<res>.rds
+    │
+    ├── <sample_name>/
+    │     │
+    │     └──<sample>_annotated_<res>.rds   # Final annotated object (07)
+    │
+    ├── <infercnv_output_dir>/                 # InferCNV outputs (08)
+    │   ├── run.final.infercnv_obj
+    │   ├── gene_order_file.txt
+    │   ├── cell_annotations.txt
+    │   └── 17_HMM_predHMMi6.leiden.*
+    │
+    ├── <cnv_downstream_output_dir>/           # CNV downstream plots (09)
+    │   ├── <sample>_cnv_chr_wide.csv
+    │   ├── <sample>_cnv_arm_wide.csv
+    │   ├── <sample>_cnv_landscape_heatmap.pdf
+    │   ├── <sample>_cnv_arm_landscape_heatmap.pdf
+    │   ├── <sample>_infercnv_subclones_spatial.pdf
+    │   └── <sample>_post_cnv.rds
+    │
+    ├── subclone/
+    │   └── <sample_name>/                     # CNV metadata outputs (10)
+    │       ├── <sample>_post_cnv_meta.rds
+    │       ├── <sample>_ne_cells.rds
+    │       ├── <sample>_cnv_chr_state_barplot.pdf
+    │       ├── <sample>_cnv_arm_state_barplot.pdf
+    │       ├── <sample>_cnv_directionality_all_arms.pdf
+    │       └── <sample>_cnv_directionality_classic_arms.pdf
+    │
+    ├── gsea/
+    │   └── <sample_name>/                     # GSEA outputs (11 + 12)
+    │       ├── avg_expression_per_subclone.csv
+    │       ├── gsea_all_subclones.csv
+    │       ├── gsea_activated_subclones.csv
+    │       ├── gsea_suppressed_subclones.csv
+    │       ├── gsea_subclone.rds
+    │       ├── gsea_filtered_nes<X>.csv
+    │       ├── gsea_activated_nes<X>.csv
+    │       ├── gsea_suppressed_nes<X>.csv
+    │       ├── <sample>_gsea_pathway_heatmap.pdf
+    │       ├── <sample>_gsea_bubble_plot.pdf
+    │       ├── <sample>_cnv_gsea_pathway_bubble.pdf
+    │       └── <sample>_<NE>_gsea_core_enrichment.png
+    │
+    ├── neighbour/
+    │   └── <sample>_neighbourhood_composition.png   # Neighbourhood plots (13)
+    │
+    └── liana/
+        └── <sample_name>/                     # LIANA+ outputs (14)
+            ├── chord_diagram_overall.png
+            ├── chord_diagram_<cell_type>.png
+            └── lr_inflow_scores.pdf
+```
+
