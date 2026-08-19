@@ -66,7 +66,7 @@ for (nm in names(sample_list)) {
               nrow(sample_list[[nm]])))
 }
 
-# ── Prompt: choose sample ─────────────────────────────────────────
+# Prompt: choose sample
 # Running one sample at a time avoids loading all into memory
 # Keep asking until a valid sample name from the list is entered
 repeat {
@@ -84,23 +84,16 @@ cat("\nLoaded:", sample_name,
     "| Cells:", ncol(obj),
     "| Genes:", nrow(obj), "\n")
 
-# Prompt: plot output directory
-# All plots from this and downstream scripts will be saved here
-# Setting it here once means all scripts use the same directory
-repeat {
-  plot_dir <- trimws(readline(
-    prompt = "\nEnter directory to save plots: "))
-  if (nchar(plot_dir) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  break
+# Set up output directories
+# All intermediate files for this sample go to results/tmp/<sample>/
+tmp_dir <- file.path("results", "tmp", sample_name)
+if (!dir.exists(tmp_dir)) {
+  dir.create(tmp_dir, recursive = TRUE)
+  cat("Created directory:", tmp_dir, "\n")
 }
 
-# Create plot directory if it does not exist
-if (!dir.exists(plot_dir)) {
-  dir.create(plot_dir, recursive = TRUE)
-  cat("Created plot directory:", plot_dir, "\n")
-}
+# Set default assay 
+DefaultAssay(obj) <- "Spatial.Polygons"
 
 # Mitochondrial percentage per cell
 # High mitochondrial % indicates damaged or dying cells
@@ -135,7 +128,7 @@ p3 <- VlnPlot(obj, features = "percent.mt",
     theme = theme(plot.title = element_text(size = 14, hjust = 0.5,
                                             face = "bold")))
 # Save QC violin plot
-qc_path <- file.path(plot_dir,
+qc_path <- file.path(tmp_dir,
   paste0(sample_name, "_qc_metrics.pdf"))
 ggsave(qc_path, p_qc, width = 14, height = 5)
 cat("Saved:", qc_path, "\n")
@@ -158,7 +151,7 @@ gp_gene_dist <- ggplot(data.frame(gene_counts),
                                   face = "bold"))
 
 # Save gene count distribution plot
-gene_dist_path <- file.path(plot_dir,
+gene_dist_path <- file.path(tmp_dir,
   paste0(sample_name, "_gene_count_distribution.pdf"))
 ggsave(gene_dist_path, p_gene_dist, width = 6, height = 5)
 cat("Saved:", gene_dist_path, "\n")
@@ -166,7 +159,8 @@ cat("Saved:", gene_dist_path, "\n")
 # Save object with percent.mt added
 # Saves obj with percent.mt column added to meta.data
 # This is the first checkpoint — 02_filter.R loads from here
-saveRDS(obj, file = paste0(sample_name, "_post_qc.rds"))
-cat("Saved:", paste0(sample_name, "_post_qc.rds"), "\n")
+out_rds <- file.path(tmp_dir, paste0(sample_name, "_post_qc.rds"))
+saveRDS(obj, file = out_rds)
+cat("Saved:", out_rds, "\n")
 
 cat("\nQC plots done. Inspect, then proceed to 02_filter.R\n")
