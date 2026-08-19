@@ -45,9 +45,6 @@ cat("Loaded:", in_rds, "\n")
 # Output directory
 tmp_dir <- file.path("results", "tmp", sample_name)
 
-# Set default assay
-DefaultAssay(obj) <- "Spatial.Polygons"
-
 # Show available resolutions - for the user
 # Finds all resolution columns added by 05a in obj@meta.data
 # Prints each one with its cluster count to help the user decide
@@ -63,7 +60,7 @@ for (i in seq_along(res_cols)) {
 # Prompt: choose resolution 
 # Keep asking until a valid column name is entered
 repeat {
-  chosen_res <- trimws(readline(prompt = "\nEnter the resolution column name to use for plots: "))
+  chosen_res <- trimws(readline(prompt = "\nEnter the resolution column name to use for markers: "))
   if (chosen_res %in% res_cols) break
   cat("Invalid '", chosen_res, "' — please enter one of the listed column names.\n", sep = "")
 }
@@ -113,23 +110,30 @@ print(obj@misc[["top10markers"]])
 # Dot size = fraction of cells expressing the gene
 # Dot colour = average expression level
 # Rows = clusters, columns = top marker genes
-DotPlot(obj,
-        features = unique(obj@misc[["top5markers"]]$gene),
-        group.by = chosen_res) +
+p_dot <- DotPlot(obj,
+                 features = unique(obj@misc[["top10markers"]]$gene),
+                 group.by = chosen_res) +
   RotatedAxis() +
-  labs(title = paste("Top 5 markers —", sample_name, "|", chosen_res)) +
+  labs(title = paste("Top 10 markers —", sample_name, "|", chosen_res)) +
   theme(plot.title = element_text(size = 13, hjust = 0.5,
                                   face = "bold"))
+ 
+ggsave(file.path(tmp_dir,
+         paste0(sample_name, "_dotplot_", chosen_res, ".pdf")),
+       p_dot, width = 14, height = 7)
+cat("Saved: DotPlot\n")
 
 # Save marker tables as CSV files
 # Full marker table — all significant markers for all clusters
 write.csv(obj@misc[["markers"]],
-          paste0("markers_", sample_name, "_", chosen_res, ".csv"),
+          file.path(tmp_dir,
+            paste0("markers_", sample_name, "_", chosen_res, ".csv")),
           row.names = TRUE)
 
 # Top 10 marker table — condensed summary
 write.csv(obj@misc[["top10markers"]],
-          paste0("top10markers_", sample_name, "_", chosen_res, ".csv"),
+          file.path(tmp_dir,
+            paste0("top10markers_", sample_name, "_", chosen_res, ".csv")),
           row.names = TRUE)
 
 cat("\nDone. Saved marker tables for", sample_name,
@@ -149,6 +153,9 @@ cat("Removed columns:", paste(cols_to_remove, collapse = ", "), "\n")
 cat("Kept:", chosen_res, "\n")
 
 # Save the final object
-saveRDS(obj, file = paste0(sample_name, "_final_", chosen_res, ".rds"))
-cat("Saved:", paste0(sample_name, "_final_", chosen_res, ".rds"), "\n")
+# Named with sample name and chosen resolution for full traceability
+# 07_annotation.R loads from this file
+out_rds <- file.path(tmp_dir, paste0(sample_name, "_final_", chosen_res, ".rds"))
+saveRDS(obj, file = out_rds)
+cat("Saved:", out_rds, "\n")
 cat("Proceed to 07_annotation.R\n")
