@@ -51,7 +51,7 @@ the pipeline handles both automatically.
 ```
 .
 ├── data/
-│   ├── seu_enact_seg_unprocessed.rds         # Input Seurat RDS
+│   ├── seu_enact_seg_unprocessed.rds         # Input Seurat RDS (not available in the github)
 │   └── gencode.v44.basic.annotation.gtf.gz   # Gencode GTF for InferCNV
 │
 ├── scripts/
@@ -80,17 +80,17 @@ the pipeline handles both automatically.
     │       ├── <sample>_post_normalise.rds
     │       ├── <sample>_post_banksy.rds
     │       ├── <sample>_post_cluster.rds
-    │       └── <sample>_final_<res>.rds
+    │       └── <sample>_final.rds
     │
     ├── <sample_name>/
-    │     │
-    │     └──<sample>_annotated_<res>.rds   # Final annotated object (07)
+    │     └──<sample>_annotated.rds   # Final annotated object (07)
     │
     ├── <infercnv_output_dir>/                 # InferCNV outputs (08)
-    │   ├── run.final.infercnv_obj
-    │   ├── gene_order_file.txt
-    │   ├── cell_annotations.txt
-    │   └── 17_HMM_predHMMi6.leiden.*
+    │    └── infercnv_<sample_name>/ 
+    │        ├── run.final.infercnv_obj
+    │        ├── gene_order_file.txt
+    │        ├── cell_annotations.txt
+    │        └── 17_HMM_predHMMi6.leiden.*
     │
     ├── <cnv_downstream_output_dir>/           # CNV downstream plots (09)
     │   ├── <sample>_cnv_chr_wide.csv
@@ -115,10 +115,6 @@ the pipeline handles both automatically.
     │       ├── gsea_all_subclones.csv
     │       ├── gsea_activated_subclones.csv
     │       ├── gsea_suppressed_subclones.csv
-    │       ├── gsea_subclone.rds
-    │       ├── gsea_filtered_nes<X>.csv
-    │       ├── gsea_activated_nes<X>.csv
-    │       ├── gsea_suppressed_nes<X>.csv
     │       ├── <sample>_gsea_pathway_heatmap.pdf
     │       ├── <sample>_gsea_bubble_plot.pdf
     │       ├── <sample>_cnv_gsea_pathway_bubble.pdf
