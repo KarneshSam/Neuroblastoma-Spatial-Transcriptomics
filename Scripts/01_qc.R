@@ -1,7 +1,9 @@
 # 01_qc.R
 # Purpose : Load libraries, read RDS, select sample, compute QC
 #           metrics, and save QC plots.
-# Output  : obj, sample_name, plot_dir — used by all downstream scripts
+ Output  : results/tmp/<sample>/<sample>_post_qc.rds
+#           results/tmp/<sample>/<sample>_qc_metrics.pdf
+#           results/tmp/<sample>/<sample>_gene_count_distribution.pdf
 # ─────────────────────────────────────────────────────────────────
 
 library(Seurat)
