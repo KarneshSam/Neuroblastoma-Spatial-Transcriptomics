@@ -254,3 +254,97 @@ plot_data <- neighbours_all %>%
     target       = factor(target, levels = ne_types)
   ) %>%
   filter(!is.na(cell_class))
+
+# Step 6: Plot
+p <- ggplot(plot_data,
+            aes(x    = neighbour_type,
+                y    = frequency,
+                fill = cell_class)) +
+ 
+  # Stacked bar per neighbour cell type
+  geom_bar(stat = "identity", width = 0.75) +
+ 
+  # Label bars where frequency >= 0.03
+  geom_text(
+    data     = plot_data %>% filter(frequency >= 0.03),
+    aes(label = sprintf("%.2f", frequency)),
+    vjust    = -0.4,
+    size     = 2.6,
+    colour   = "grey20",
+    fontface = "bold"
+  ) +
+ 
+  # One panel per NE subtype
+  facet_wrap(~ target, ncol = 3, scales = "free_y",
+             axes = "all_x", axis.labels = "all_x") +
+ 
+  scale_fill_manual(values = class_colours, name = "Cell types") +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.22)),
+    labels = scales::label_number(accuracy = 0.01)
+  ) +
+  scale_x_discrete(drop = FALSE) +
+ 
+  # Colour x-axis tick labels by cell class
+  guides(
+    x = guide_axis_color(
+      color = class_colours[
+        as.character(
+          plot_data %>%
+            distinct(neighbour_type, cell_class) %>%
+            arrange(neighbour_type) %>%
+            pull(cell_class)
+        )
+      ]
+    ),
+    fill = guide_legend(ncol = 2)
+  ) +
+ 
+  theme_classic(base_size = 11) +
+  theme(
+    strip.text       = element_text(face = "bold", size = 12,
+                                    colour = "white"),
+    strip.background = element_rect(fill = "grey30", colour = NA),
+ 
+    axis.text.x  = element_text(angle = 90, hjust = 1,
+                                vjust = 0.5, size = 8),
+    axis.text.y  = element_text(size = 9),
+    axis.title   = element_text(size = 11),
+    axis.line    = element_line(colour = "grey60"),
+    axis.ticks   = element_line(colour = "grey60"),
+ 
+    panel.grid.major.y = element_line(colour = "grey92", linewidth = 0.4),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor   = element_blank(),
+ 
+    legend.position        = "inside",
+    legend.position.inside = c(0.45, 0.10),
+    legend.direction       = "vertical",
+    legend.title           = element_text(face = "bold", size = 10),
+    legend.text            = element_text(size = 9),
+    legend.key.size        = unit(0.45, "cm"),
+ 
+    panel.spacing = unit(0.8, "lines"),
+    plot.title    = element_text(face = "bold", size = 13,
+                                 hjust = 0.5),
+    plot.caption  = element_text(size = 9, colour = "grey40",
+                                 hjust = 0),
+    plot.margin   = margin(10, 15, 10, 10)
+  ) +
+ 
+  labs(
+    title   = paste("Neighbourhood composition —", sample_name),
+    x       = NULL,
+    y       = "Proportion of neighbours",
+    caption = paste0("*Spatial radius r = ", radius,
+                     " µm  |  Bars labelled when >= 0.03")
+  ) 
+
+# Save plot
+out_path <- file.path(out_dir,
+  paste0(sample_name, "_neighbourhood_composition.pdf"))
+ggsave(out_path, p,
+       width  = max(14, length(ne_types) * 5),
+       height = 10,
+       units  = "in")
+cat("Saved:", out_path, "\n")
