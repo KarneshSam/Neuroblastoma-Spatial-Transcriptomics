@@ -154,3 +154,53 @@ get_neighbourhood <- function(target_type, radius = 200) {
     target         = target_type
   )
 }
+
+# Step 3: Run for all detected NE subtypes
+neighbours_all <- map_dfr(ne_types, function(nt) {
+  cat("Computing", nt, "neighbourhood...\n")
+  get_neighbourhood(nt, radius = radius)
+})
+ 
+cat("\nNeighbourhood computation done.\n")
+
+# Step 4: Show available cell types
+# Lists all unique neighbour cell types found in the data
+# User assigns each to a broad class and defines display order
+all_types <- sort(unique(neighbours_all$neighbour_type))
+
+cat("\nNeighbour cell types found in", sample_name, ":\n")
+for (i in seq_along(all_types)) {
+  cat(sprintf("  [%d] %s\n", i, all_types[i]))
+}
+
+# Prompt: assign each cell type to a broad class
+# Available classes: Tumour, Stromal, Endothelial, Immune, Ambiguous
+valid_classes <- c("Tumour", "Stromal", "Endothelial", "Immune", "Ambiguous")
+
+cat("\nAssign each cell type to a broad class.\n")
+cat("Options:", paste(valid_classes, collapse = ", "), "\n\n")
+
+class_map <- c()
+
+for (ct in all_types) {
+  repeat {
+    cls <- trimws(readline(
+      prompt = paste0("  ", ct, " -> class: ")))
+    if (nchar(cls) == 0) {
+      cat("  Cannot be empty.\n"); next
+    }
+    # Case-insensitive match
+    matched <- valid_classes[tolower(valid_classes) == tolower(cls)]
+    if (length(matched) == 0) {
+      cat("  Invalid — choose from:",
+          paste(valid_classes, collapse = ", "), "\n"); next
+    }
+    class_map[ct] <- matched
+    break
+  }
+}
+
+cat("\nClass assignments:\n")
+for (ct in names(class_map)) {
+  cat(sprintf("  %-30s -> %s\n", ct, class_map[ct]))
+}
