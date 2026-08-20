@@ -101,3 +101,56 @@ if (!dir.exists(out_dir)) {
   cat("Created directory:", out_dir, "\n")
 }
 
+# Step 1: Extract coordinates and cell type annotations
+# GetTissueCoordinates returns spatial x/y coordinates per cell
+# Match cell_type_hr from metadata to the coordinate table
+coords <- GetTissueCoordinates(obj)
+coords$cell_type <- obj$cell_type_hr[
+  match(coords$cell, colnames(obj))
+]
+ 
+# Remove cells with no cell type annotation
+coords_all     <- coords[!is.na(coords$cell_type), ]
+coords_mat_all <- as.matrix(coords_all[, c("x", "y")])
+ 
+cat("\nTotal cells with coordinates:", nrow(coords_all), "\n")
+ 
+# ── Step 2: Neighbourhood function ───────────────────────────────
+# For each cell of the target type, find all cells within radius µm
+# Exclude the query cell itself from its own neighbour list
+# Pool all neighbours across all query cells and compute type proportions
+get_neighbourhood <- function(target_type, radius = 200) {
+ 
+  target_idx    <- which(coords_all$cell_type == target_type)
+  target_coords <- coords_mat_all[target_idx, ]
+ 
+  # Fixed-radius nearest-neighbour search
+  # k = 100 sets an upper limit on neighbours returned per cell
+  nn <- RANN::nn2(
+    data       = coords_mat_all,
+    query      = target_coords,
+    k          = 100,
+    searchtype = "radius",
+    radius     = radius
+  )
+ 
+  # For each query cell, collect neighbour cell types
+  # Remove zero-index entries (unfilled slots) and self
+  neighbour_types <- lapply(seq_len(nrow(nn$nn.idx)), function(i) {
+    idx <- nn$nn.idx[i, ]
+    idx <- idx[idx > 0]           # remove empty slots
+    idx <- idx[idx != target_idx[i]]  # exclude self
+    coords_all$cell_type[idx]
+  })
+ 
+  # Pool all neighbour types and compute relative frequencies
+  all_neighbours <- unlist(neighbour_types)
+  type_counts    <- table(all_neighbours)
+  type_freq      <- prop.table(type_counts)
+ 
+  data.frame(
+    neighbour_type = names(type_freq),
+    frequency      = as.numeric(type_freq),
+    target         = target_type
+  )
+}
