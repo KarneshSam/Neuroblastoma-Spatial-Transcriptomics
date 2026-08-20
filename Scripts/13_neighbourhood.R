@@ -50,4 +50,46 @@ in_rds <- file.path("results", "annotated_obj", chosen_file)
 obj    <- readRDS(in_rds)
 cat("Loaded:", in_rds, "\n")
 cat("Cells:", ncol(obj), "| Genes:", nrow(obj), "\n")
+
+# Set default assay
+DefaultAssay(obj) <- "Spatial.Polygons"
+
+# Prompt: search radius
+# Radius in µm for the fixed-radius nearest-neighbour search
+# Default is 200 µm based on the study methodology
+repeat {
+  radius_input <- trimws(readline(
+    prompt = "\nEnter spatial search radius in µm [default: 200]: "))
+  if (nchar(radius_input) == 0) {
+    radius <- 200
+    cat("Using default: 200 µm\n")
+    break
+  }
+  radius <- suppressWarnings(as.numeric(radius_input))
+  if (is.na(radius) || radius <= 0) {
+    cat("Invalid — please enter a positive number.\n"); next
+  }
+  break
+}
  
+# Prompt: tumour subtype prefix
+# Used to detect which cell types to run neighbourhood analysis for
+# e.g. "NE" will find NE1, NE2, NE3 etc. from cell_type_hr
+repeat {
+  tumour_prefix <- trimws(readline(
+    prompt = "\nEnter tumour subtype prefix (e.g. NE): "))
+  if (nchar(tumour_prefix) == 0) {
+    cat("Prefix cannot be empty.\n"); next
+  }
+  break
+}
+ 
+# Detect all tumour subtypes present in cell_type_hr
+ne_types <- sort(unique(obj$cell_type_hr[
+  grepl(paste0("^", tumour_prefix), obj$cell_type_hr)]))
+cat("Tumour subtypes detected:", paste(ne_types, collapse = ", "), "\n")
+ 
+if (length(ne_types) == 0) {
+  stop("No cell types found with prefix '", tumour_prefix,
+       "' in cell_type_hr column.")
+}
