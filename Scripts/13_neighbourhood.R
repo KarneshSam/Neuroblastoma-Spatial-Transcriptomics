@@ -230,3 +230,27 @@ repeat {
   }
   break
 }
+
+# Colour palette by broad cell class
+class_colours <- c(
+  "Tumour"      = "#D62728",
+  "Immune"      = "#1F77B4",
+  "Stromal"     = "#2CA02C",
+  "Endothelial" = "#FF7F0E",
+  "Ambiguous"   = "#BDBDBD"
+)
+
+# Step 5: Build plot data
+# Assign each neighbour type to its user-defined broad cell class
+# Factor levels for x-axis follow user-defined type_order
+plot_data <- neighbours_all %>%
+  mutate(
+    cell_class     = class_map[neighbour_type],
+    neighbour_type = factor(neighbour_type, levels = type_order),
+    cell_class     = factor(cell_class,
+                            levels = c("Tumour", "Stromal",
+                                       "Endothelial", "Immune",
+                                       "Ambiguous")),
+    target       = factor(target, levels = ne_types)
+  ) %>%
+  filter(!is.na(cell_class))
