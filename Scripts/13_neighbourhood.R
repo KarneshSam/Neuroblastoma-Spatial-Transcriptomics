@@ -348,3 +348,12 @@ ggsave(out_path, p,
        height = 10,
        units  = "in")
 cat("Saved:", out_path, "\n")
+
+# Save neighbourhood frequency table
+# Raw frequency table for further analysis if needed
+csv_path <- file.path(out_dir,
+  paste0(sample_name, "_neighbourhood_frequencies.csv"))
+write.csv(neighbours_all, csv_path, row.names = FALSE)
+cat("Saved:", csv_path, "\n")
+ 
+cat("\nNeighbourhood analysis complete for", sample_name, "\n")
