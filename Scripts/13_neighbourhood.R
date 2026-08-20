@@ -93,3 +93,11 @@ if (length(ne_types) == 0) {
   stop("No cell types found with prefix '", tumour_prefix,
        "' in cell_type_hr column.")
 }
+
+# Output directory
+out_dir <- file.path("results", "neighbour")
+if (!dir.exists(out_dir)) {
+  dir.create(out_dir, recursive = TRUE)
+  cat("Created directory:", out_dir, "\n")
+}
+
