@@ -204,3 +204,29 @@ cat("\nClass assignments:\n")
 for (ct in names(class_map)) {
   cat(sprintf("  %-30s -> %s\n", ct, class_map[ct]))
 }
+
+# Prompt: display order
+# User defines the order of cell types on the x-axis
+# Enter as comma-separated list — types not listed are dropped
+cat("\nDefine the display order for the x-axis.\n")
+cat("Enter cell type names comma-separated in the order you want.\n")
+cat("Available:\n")
+for (ct in all_types) cat("  ", ct, "\n")
+
+repeat {
+  order_input <- trimws(readline(prompt = "\nX-axis order: "))
+  type_order  <- trimws(strsplit(order_input, ",")[[1]])
+  type_order  <- type_order[nzchar(type_order)]
+
+  # Warn about any names not in the data but still accept
+  unknown <- type_order[!type_order %in% all_types]
+  if (length(unknown) > 0) {
+    cat("Warning: these names not found in data and will be ignored:",
+        paste(unknown, collapse = ", "), "\n")
+  }
+  type_order <- type_order[type_order %in% all_types]
+  if (length(type_order) == 0) {
+    cat("No valid cell types entered. Please try again.\n"); next
+  }
+  break
+}
