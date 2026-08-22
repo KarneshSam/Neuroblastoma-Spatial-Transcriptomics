@@ -222,3 +222,39 @@ else:
     resource_extended  = resource
     custom_genes_needed = set()
 
+##################################################
+# STEP 7 — Subset adata to SVGs + custom LR genes
+##################################################
+genes_to_keep = list(set(list(svgs)) | custom_genes_needed)
+genes_to_keep = [g for g in genes_to_keep if g in adata.var_names]
+ 
+adata_targeted = adata[:, genes_to_keep].copy()
+print(f"\nTargeted adata shape: {adata_targeted.shape}")
+
+# Recompute spatial neighbours on the gene subset
+li.ut.spatial_neighbors(
+    adata=adata_targeted,
+    bandwidth=bandwidth,
+    spatial_key="spatial"
+)
+print("Spatial neighbours recomputed on targeted adata.")
+
+##################################################
+# STEP 8 — Run inflow scores
+##################################################
+print("\nRunning LIANA inflow scores...")
+lrdata = li.mt.inflow(
+    adata_targeted,
+    groupby='cell_type_hr',
+    resource=resource_extended,
+    use_raw=False
+)
+print("Inflow scores computed.")
+print(lrdata.shape)
+ 
+# Save global interactions CSV
+lrdata.uns['global_interactions'].to_csv(
+    os.path.join(out_dir, f"{sample_name}_lr_interactions.csv"),
+    index=False)
+print("Saved: LR interactions CSV")
+
