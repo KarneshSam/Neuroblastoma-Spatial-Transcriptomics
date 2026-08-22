@@ -102,3 +102,42 @@ out_dir = os.path.join("results", "liana", sample_name)
 os.makedirs(out_dir, exist_ok=True)
 print(f"\nOutputs will be saved to: {out_dir}")
 
+##############################################
+# STEP 1 — Load AnnData
+##############################################
+print("\nLoading AnnData...")
+adata = ad.read_h5ad(h5ad_path)
+ 
+# Use log-normalised counts as the expression layer
+adata.X = adata.layers["logcounts"].copy()
+print(adata)
+ 
+##############################################
+# STEP 2 — Check spatial coordinates range
+##############################################
+print("\nSpatial coordinates range:")
+print("X:", adata.obsm["spatial"][:, 0].min(),
+      "to", adata.obsm["spatial"][:, 0].max())
+print("Y:", adata.obsm["spatial"][:, 1].min(),
+      "to", adata.obsm["spatial"][:, 1].max())
+ 
+##############################################
+# STEP 3 — Query bandwidth and visualise
+##############################################
+print("\nQuerying bandwidth options...")
+plot, df = li.ut.query_bandwidth(
+    coordinates=adata.obsm["spatial"],
+    start=10,
+    end=500,
+    interval_n=40
+)
+ 
+# Save bandwidth plot with chosen bandwidth marked
+bw_plot = plot + \
+    p9.geom_vline(xintercept=bandwidth, linetype="dashed", color="red") + \
+    p9.annotate("text", x=bandwidth, y=df.neighbours.max(),
+                label=f"chosen={bandwidth}µm",
+                angle=90, va="bottom", ha="right", color="red")
+bw_plot.save(os.path.join(out_dir, f"{sample_name}_bandwidth_selection.pdf"),
+             dpi=300)
+print(f"Saved: bandwidth selection plot")
