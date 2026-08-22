@@ -552,9 +552,9 @@ cat("Saved:", spatial_subclone_path, "\n")
 # Saves obj with two new metadata columns added by this script:
 #   - cnv_score          : per-cell CNV variance score
 #   - infercnv_subclone  : subclone assignment from InferCNV HMM
-saveRDS(obj,
-        file = paste0(sample_name, "_post_cnv.rds"))
-cat("Saved:", paste0(sample_name, "_post_cnv.rds"), "\n")
+out_rds <- file.path(plot_dir, paste0(sample_name, "_post_cnv.rds"))
+saveRDS(obj, file = out_rds)
+cat("Saved:", out_rds, "\n")
 
 cat("\nAll plots saved to:", plot_dir, "\n")
 cat("CNV analysis complete for", sample_name, "\n")
