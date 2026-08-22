@@ -172,4 +172,53 @@ adata.uns['moranI'].loc[svgs].sort_values("I", ascending=False).to_csv(
     os.path.join(out_dir, f"{sample_name}_svgs_moranI.csv"))
 print("Saved: SVG Moran's I table")
 
+#################################################
+# STEP 6 — Load LR resource
+#################################################
+print("\nLoading LR resource (consensus)...")
+resource = li.rs.select_resource('consensus')
+print(f"Consensus resource: {len(resource)} LR pairs")
  
+# Optional: load and merge custom LR pairs
+if lr_csv is not None:
+    print(f"\nLoading custom LR pairs from: {lr_csv}")
+    your_pasted_df = pd.read_csv(lr_csv)
+    print(your_pasted_df.head())
+ 
+    # Extract unique ligand-receptor pairs
+    custom_pairs = your_pasted_df[['ligand', 'receptor']].drop_duplicates().reset_index(drop=True)
+    print(f"Unique custom LR pairs: {len(custom_pairs)}")
+ 
+    # Check which pairs have genes present in the panel
+    def gene_in_panel(pair_str, panel_genes):
+        return all(g in panel_genes for g in pair_str.split('_'))
+ 
+    panel_genes = set(adata.var_names)
+    custom_pairs['ligand_in_panel']   = custom_pairs['ligand'].apply(
+        lambda x: gene_in_panel(x, panel_genes))
+    custom_pairs['receptor_in_panel'] = custom_pairs['receptor'].apply(
+        lambda x: gene_in_panel(x, panel_genes))
+ 
+    recoverable  = custom_pairs[
+        custom_pairs['ligand_in_panel'] & custom_pairs['receptor_in_panel']]
+    truly_missing = custom_pairs[
+        ~(custom_pairs['ligand_in_panel'] & custom_pairs['receptor_in_panel'])]
+ 
+    print(f"\nCustom pairs usable with panel: {len(recoverable)}")
+    print(f"Custom pairs missing from panel (dropped): {len(truly_missing)}")
+ 
+    # Extend resource with recoverable custom pairs
+    resource_extended = pd.concat(
+        [resource, recoverable[['ligand', 'receptor']]],
+        ignore_index=True
+    ).drop_duplicates()
+ 
+    print(f"Extended resource: {len(resource_extended)} pairs")
+ 
+    # Collect all genes needed for custom pairs
+    custom_genes_needed = set(recoverable['ligand']) | \
+        {g for pair in recoverable['receptor'] for g in pair.split('_')}
+else:
+    resource_extended  = resource
+    custom_genes_needed = set()
+
