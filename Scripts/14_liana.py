@@ -141,3 +141,35 @@ bw_plot = plot + \
 bw_plot.save(os.path.join(out_dir, f"{sample_name}_bandwidth_selection.pdf"),
              dpi=300)
 print(f"Saved: bandwidth selection plot")
+
+###############################################
+# STEP 4 — Compute spatial neighbours
+###############################################
+print(f"\nComputing spatial neighbours (bandwidth={bandwidth} µm)...")
+li.ut.spatial_neighbors(
+    adata=adata,
+    bandwidth=bandwidth,
+    spatial_key="spatial"
+)
+print("Spatial neighbours computed.")
+
+################################################
+# STEP 5 — Spatially variable genes (Moran's I)
+################################################
+print("\nRunning Moran's I spatial autocorrelation...")
+sq.gr.spatial_autocorr(adata, mode='moran', use_raw=False,
+                        show_progress_bar=True)
+ 
+# Filter to significant SVGs: BH-adjusted p < 0.05 and I > 0.01
+svgs = adata.uns['moranI'].index[
+    (adata.uns['moranI']['pval_norm_fdr_bh'] < 0.05) &
+    (adata.uns['moranI']['I'] > 0.01)
+]
+print(f"Spatially variable genes (SVGs): {len(svgs)}")
+
+# Save SVG table
+adata.uns['moranI'].loc[svgs].sort_values("I", ascending=False).to_csv(
+    os.path.join(out_dir, f"{sample_name}_svgs_moranI.csv"))
+print("Saved: SVG Moran's I table")
+
+ 
