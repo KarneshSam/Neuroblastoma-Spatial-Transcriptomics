@@ -2,84 +2,86 @@
 # Purpose : Generate gene order file from GTF, then run InferCNV
 #           on a cell-annotated Seurat object.
 #           Prompts the user for all inputs interactively.
+# # Output  : results/<infercnv_output_dir>/
 # Requires: A cell-annotated RDS file (output of 07_annotation.R)
 #           and a Gencode GTF file (.gtf or .gtf.gz)
 # ─────────────────────────────────────────────────────────────────
+
 library(Seurat)
 library(infercnv)
 library(rtracklayer)
 library(dplyr)
 
-##################################
-# Load the list of Seurat object
-##################################
-rds_obj <- readRDS("seu_enact_seg_unprocessed.rds")
-
-# Setup: The file can be a single Seurat object or a list of Seurat objects of any length
-# Case 1: single Seurat object — wrap in list for uniform handling
-# Case 2: named or unnamed list of Seurat objects of any length
-if (inherits(rds_obj, "Seurat")) {
-  cat("Detected: single Seurat object\n")
-  sample_list <- list(S1 = rds_obj)          # assign a name S1 to the single object for downstream use
-
-} 
-else if (is.list(rds_obj) &&
-           all(sapply(rds_obj, inherits, "Seurat"))) {
-  cat("Detected:", length(rds_obj), "Seurat objects in list\n")
-
-  # Use existing names if available, otherwise assign S1, S2, S3 ...
-  if (is.null(names(rds_obj))) {
-    names(rds_obj) <- paste0("S", seq_along(rds_obj))
-    cat("No names found — assigned:",
-        paste(names(rds_obj), collapse = ", "), "\n")
-  }
-  sample_list <- rds_obj               # assign the list to sample_list for downstream use
-
-} 
-else {
-  stop("The file does not contain a Seurat object or a list of Seurat objects.")
-}
-
-# Print summary of all samples
-cat("\nSamples available:\n")
-for (nm in names(sample_list)) {
-  cat(sprintf("  %-6s | Cells: %d | Genes: %d\n",
-              nm, ncol(sample_list[[nm]]), nrow(sample_list[[nm]])))
-}
-
-# Prompt: output directory 
-# All InferCNV outputs including gene order file go here
+########################
+# Prompt: sample name 
+########################
 repeat {
-  out_dir <- trimws(readline(prompt = "\nEnter output directory name: "))
-  if (nchar(out_dir) == 0) {
-    cat("Output directory cannot be empty.\n"); next
+  sample_name <- trimws(readline(prompt = "\nEnter sample name (e.g. P1, P1.B): "))
+  if (nchar(sample_name) == 0) {
+    cat("Sample name cannot be empty.\n"); next
   }
   break
 }
 
-# Create output directory if it does not exist
+# Detect available annotated objects
+# Lists all annotated RDS files saved by 07_annotation.R
+final_files <- list.files(
+  path       = file.path("results", "annotated_obj"),
+  pattern    = paste0("^", sample_name, "_annotated_.*\\.rds$"),
+  full.names = TRUE
+)
+
+if (length(final_files) == 0) {
+  stop("No annotated RDS files found in results/annotated_obj/",
+       "\nPlease run 07_annotation.R first.")
+}
+ 
+cat("\nAvailable annotated objects for", sample_name, ":\n")
+for (i in seq_along(final_files)) {
+  cat(sprintf("  [%d] %s\n", i, basename(final_files[i])))
+}
+
+# Prompt: choose file
+repeat {
+  chosen_file <- trimws(readline(
+    prompt = "\nEnter the filename to load: "))
+  if (chosen_file %in% basename(final_files)) break
+  cat("Invalid — please enter one of the listed filenames.\n")
+}
+ 
+in_rds <- file.path("results", "annotated_obj", chosen_file)
+obj    <- readRDS(in_rds)
+cat("Loaded:", in_rds, "\n")
+cat("Cells:", ncol(obj), "| Genes:", nrow(obj), "\n")
+
+# Set default assay
+DefaultAssay(obj) <- "Spatial.Polygons"
+
+# Prompt: GTF file path
+# Used to generate gene order file specific to this object's genes
+repeat {
+  gtf_path <- trimws(readline(
+    prompt = "\nEnter path to GTF file (e.g. gencode.v44.basic.annotation.gtf.gz): "))
+  if (nchar(gtf_path) == 0) {
+    cat("Path cannot be empty.\n"); next
+  }
+  if (!file.exists(gtf_path)) {
+    cat("File not found: '", gtf_path, "'\n", sep = ""); next
+  }
+  break
+}
+
+# Set InferCNV output directory
+
+out_dir <- file.path("results", "infercnv_output",
+                     paste0("infercnv_", sample_name))
+
 if (!dir.exists(out_dir)) {
   dir.create(out_dir, recursive = TRUE)
   cat("Created output directory:", out_dir, "\n")
 }
 
-#########################
-# Prompt: choose sample 
-#########################
-# Provide the available sample names to the user and ask which one to run InferCNV on
-repeat {
-  cat("\nAvailable samples:", paste(names(sample_list), collapse = ", "), "\n")
-  sample_name <- trimws(readline(prompt = "Which sample to run InferCNV on? "))
-  if (sample_name %in% names(sample_list)) break
-  cat("Invalid '", sample_name,
-      "' — please enter one of the listed names.\n", sep = "")
-}
-
-# Load that Seurat object into the obj variable
-obj <- sample_list[[sample_name]]
-cat("\nLoaded:", sample_name,
-    "| Cells:", ncol(obj),
-    "| Genes:", nrow(obj), "\n")
+cat("InferCNV outputs will be saved to:", out_dir, "\n")
 
 # Show available cell types
 all_cell_types <- sort(unique(obj$cell_type_hr))
