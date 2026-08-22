@@ -63,34 +63,34 @@ DefaultAssay(obj) <- "Spatial.Polygons"
 #####################################
 # Directory containing the InferCNV run outputs
 # Should contain run.final.infercnv_obj and HMM output files
-repeat {
-  infercnv_dir <- trimws(readline(
-    prompt = "\nEnter InferCNV output directory path: "))
-  if (nchar(infercnv_dir) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!dir.exists(infercnv_dir)) {
-    cat("Directory not found: '", infercnv_dir,
-        "' — please check the path.\n", sep = ""); next
-  }
-  break
+# Matches the fixed path set by 08_infercnv_pipeline.R
+infercnv_dir <- file.path("results", "infercnv_output",
+                           paste0("infercnv_", sample_name))
+
+if (!dir.exists(infercnv_dir)) {
+  stop("InferCNV directory not found: ", infercnv_dir,
+       "\nPlease run 08_infercnv_pipeline.R first.")
 }
 
-# Prompt: plot output directory
+cat("Loading InferCNV outputs from:", infercnv_dir, "\n")
+
+# Set plot and table output directory
 # Where all plots from this script will be saved
-repeat {
-  plot_dir <- trimws(readline(
-    prompt = "\nEnter directory to save plots: "))
-  if (nchar(plot_dir) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  break
-}
+plot_dir <- file.path("results", "cnv_downstream_output",
+                       paste0("infercnv_", sample_name))
 
-# Create plot directory if it does not exist
 if (!dir.exists(plot_dir)) {
   dir.create(plot_dir, recursive = TRUE)
-  cat("Created plot directory:", plot_dir, "\n")
+  cat("Created output directory:", plot_dir, "\n")
+}
+
+cat("Outputs will be saved to:", plot_dir, "\n")
+
+# Show available cell types
+all_cell_types <- sort(unique(obj$cell_type_hr))
+cat("\nCell types available in", sample_name, ":\n")
+for (i in seq_along(all_cell_types)) {
+  cat(sprintf("  [%d] %s\n", i, all_cell_types[i]))
 }
 
 ##############################################
