@@ -315,3 +315,22 @@ interaction_matrix.to_csv(
     os.path.join(out_dir, f"{sample_name}_interaction_matrix.csv"))
 print("Saved: interaction matrix CSV")
 
+##############################################
+# STEP 12 — Overall chord diagram
+##############################################
+print("\nGenerating overall chord diagram...")
+ 
+circos = Circos.chord_diagram(
+    interaction_matrix,
+    space=3,
+    cmap="tab20",
+    label_kws=dict(size=10, r=110),
+    link_kws=dict(ec="black", lw=0.3, direction=1),
+)
+fig = circos.plotfig()
+plt.title(f"Overall cell-cell inflow signalling — {sample_name}")
+chord_overall_path = os.path.join(out_dir,
+    f"{sample_name}_chord_overall.png")
+plt.savefig(chord_overall_path, dpi=300, bbox_inches="tight")
+plt.close()
+print(f"Saved: {chord_overall_path}")
