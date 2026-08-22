@@ -287,3 +287,31 @@ intercellular.sort_values("lr_mean", ascending=False).to_csv(
     os.path.join(out_dir, f"{sample_name}_intercellular_interactions.csv"),
     index=False)
 print("Saved: intercellular interactions CSV")
+
+###########################################################
+# STEP 11 — Build sender x receiver interaction matrix
+###########################################################
+print("\nBuilding sender x receiver interaction matrix...")
+ 
+interaction_names = lrdata.var_names.tolist()
+cell_types        = lrdata.obs['cell_type_hr'].unique().tolist()
+ 
+interaction_matrix = pd.DataFrame(0.0,
+                                   index=cell_types,
+                                   columns=cell_types)
+
+for ct_receiver in cell_types:
+    mask          = lrdata.obs['cell_type_hr'] == ct_receiver
+    receiver_data = lrdata[mask]
+    for ct_sender in cell_types:
+        cols = [c for c in interaction_names if c.startswith(f"{ct_sender}^")]
+        if len(cols) == 0:
+            continue
+        vals = receiver_data[:, cols].X
+        vals = vals.toarray() if hasattr(vals, 'toarray') else vals
+        interaction_matrix.loc[ct_sender, ct_receiver] = np.mean(vals)
+ 
+interaction_matrix.to_csv(
+    os.path.join(out_dir, f"{sample_name}_interaction_matrix.csv"))
+print("Saved: interaction matrix CSV")
+
