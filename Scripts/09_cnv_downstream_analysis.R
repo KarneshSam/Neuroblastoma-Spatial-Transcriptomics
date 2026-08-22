@@ -2,62 +2,61 @@
 # Purpose : Compute CNV scores from InferCNV output, extract
 #           subclone assignments, summarise CNV states at both
 #           chromosome and arm level, save all plots and tables.
+# # Output  : results/<cnv_downstream_output>/infercnv_<sample_name>/
 # Requires: sample_name  (from 00_setup.R)
 #           Cell-annotated Seurat RDS and InferCNV output directory
 # ─────────────────────────────────────────────────────────────────
 
-library(Seurat)
+ibrary(Seurat)
 library(dplyr)
 library(tidyr)
 library(tibble)
 library(stringr)
 library(pheatmap)
 library(ggplot2)
+library(RColorBrewer)
 
-##################################
-# Load the list of Seurat object
-##################################
-rds_obj <- readRDS("seu_enact_seg_unprocessed.rds")
-
-# Handle single object or list of any length
-if (inherits(rds_obj, "Seurat")) {
-  cat("Detected: single Seurat object\n")
-  sample_list <- list(S1 = rds_obj)
-
-} else if (is.list(rds_obj) &&
-           all(sapply(rds_obj, inherits, "Seurat"))) {
-  cat("Detected:", length(rds_obj), "Seurat objects in list\n")
-  if (is.null(names(rds_obj))) {
-    names(rds_obj) <- paste0("S", seq_along(rds_obj))
-    cat("No names found — assigned:",
-        paste(names(rds_obj), collapse = ", "), "\n")
-  }
-  sample_list <- rds_obj
-
-} else {
-  stop("RDS does not contain a Seurat object or a list of Seurat objects.")
-}
-
-# Print summary of all samples
-cat("\nSamples available:\n")
-for (nm in names(sample_list)) {
-  cat(sprintf("  %-6s | Cells: %d | Genes: %d\n",
-              nm, ncol(sample_list[[nm]]), nrow(sample_list[[nm]])))
-}
-
-# Prompt: choose sample 
+# Prompt: sample name 
 repeat {
-  cat("\nAvailable samples:", paste(names(sample_list), collapse = ", "), "\n")
-  sample_name <- trimws(readline(prompt = "Which sample to analyse? "))
-  if (sample_name %in% names(sample_list)) break
-  cat("Invalid '", sample_name,
-      "' — please enter one of the listed names.\n", sep = "")
+  sample_name <- trimws(readline(prompt = "\nEnter sample name (e.g. P1, P1.B): "))
+  if (nchar(sample_name) == 0) {
+    cat("Sample name cannot be empty.\n"); next
+  }
+  break
+}
+ 
+# Detect available annotated objects
+final_files <- list.files(
+  path       = file.path("results", "annotated_obj"),
+  pattern    = paste0("^", sample_name, "_annotated_.*\\.rds$"),
+  full.names = TRUE
+)
+
+if (length(final_files) == 0) {
+  stop("No annotated RDS files found in results/annotated_obj/",
+       "\nPlease run 07_annotation.R first.")
+}
+ 
+cat("\nAvailable annotated objects for", sample_name, ":\n")
+for (i in seq_along(final_files)) {
+  cat(sprintf("  [%d] %s\n", i, basename(final_files[i])))
 }
 
-obj <- sample_list[[sample_name]]
-cat("\nLoaded:", sample_name,
-    "| Cells:", ncol(obj),
-    "| Genes:", nrow(obj), "\n")
+# Prompt: choose file 
+repeat {
+  chosen_file <- trimws(readline(
+    prompt = "\nEnter the filename to load: "))
+  if (chosen_file %in% basename(final_files)) break
+  cat("Invalid — please enter one of the listed filenames.\n")
+}
+ 
+in_rds <- file.path("results", "annotated_obj", chosen_file)
+obj    <- readRDS(in_rds)
+cat("Loaded:", in_rds, "\n")
+cat("Cells:", ncol(obj), "| Genes:", nrow(obj), "\n")
+
+# Set default assay
+DefaultAssay(obj) <- "Spatial.Polygons"
 
 #####################################
 # Prompt: InferCNV output directory
