@@ -38,6 +38,65 @@ while True:
         continue
     break
 
+# Prompt: custom LR pairs CSV
+# Optional CSV with additional ligand-receptor pairs
+# Must have columns: ligand, receptor
+# Press Enter to skip and use only the consensus resource
+while True:
+    lr_csv = input(
+        "\nEnter path to custom LR pairs CSV (or press Enter to skip): "
+    ).strip()
+    if lr_csv == "":
+        lr_csv = None
+        print("Skipping custom LR pairs — using consensus resource only.")
+        break
+    if not os.path.exists(lr_csv):
+        print(f"File not found: '{lr_csv}' — please check the path.")
+        continue
+    break
+
+# Prompt: tumour subtype prefix
+tumour_prefix = input(
+    "\nEnter tumour subtype prefix (e.g. NE): ").strip()
+
+while not tumour_prefix:
+    print("Prefix cannot be empty.")
+    tumour_prefix = input("Enter tumour subtype prefix: ").strip()
+
+# Prompt: spatial bandwidth
+while True:
+    bw_input = input(
+        "\nEnter spatial bandwidth in µm [default: 200]: "
+    ).strip()
+    if bw_input == "":
+        bandwidth = 200
+        print("Using default: 200 µm")
+        break
+    try:
+        bandwidth = float(bw_input)
+        if bandwidth <= 0:
+            raise ValueError
+        break
+    except ValueError:
+        print("Invalid — please enter a positive number.")
+
+# Prompt: lr_mean filter threshold
+while True:
+    lr_input = input(
+        "\nEnter lr_mean filter threshold for dotplots [default: 0.01]: "
+    ).strip()
+    if lr_input == "":
+        lr_threshold = 0.01
+        print("Using default: 0.01")
+        break
+    try:
+        lr_threshold = float(lr_input)
+        if lr_threshold < 0:
+            raise ValueError
+        break
+    except ValueError:
+        print("Invalid — please enter a non-negative number.")
+
 # Output directory
 out_dir = os.path.join("results", "liana", sample_name)
 os.makedirs(out_dir, exist_ok=True)
