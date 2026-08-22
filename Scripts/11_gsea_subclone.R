@@ -1,9 +1,10 @@
 # 11_gsea_subclone.R
 # Purpose : Run GSEA Reactome per subclone using average expression
 #           as the ranking metric. Loads the NE cells subset saved
-#           by 09_cnv_metadata.R.
+#           by 10_cnv_metadata.R.
+# Output  : results/gsea/<sample>/
 # Requires: sample_name  (from 00_setup.R)
-#           _ne_cells.rds saved by 09_cnv_metadata.R
+#           _ne_cells.rds saved by 10_cnv_metadata.R
 # ─────────────────────────────────────────────────────────────────
 
 library(Seurat)
@@ -13,50 +14,30 @@ library(ReactomePA)
 library(org.Hs.eg.db)
 library(tibble)
 
-########################
-# Prompt: sample name 
-#########################
-repeat {
-  sample_name <- trimws(readline(prompt = "\nEnter sample name (e.g. P1, P2): "))
-  if (nchar(sample_name) == 0) {
-    cat("Sample name cannot be empty.\n"); next
-  }
-  break
+# Load NE cells object
+# Loads directly from the fixed output path of 10_cnv_metadata.R
+in_rds <- file.path("results", "subclone", sample_name,
+                    paste0(sample_name, "_ne_cells.rds"))
+ 
+if (!file.exists(in_rds)) {
+  stop("File not found: ", in_rds,
+       "\nPlease run 10_cnv_metadata.R first.")
 }
+ 
+ne_cells <- readRDS(in_rds)
+cat("Loaded:", in_rds, "\n")
+cat("Cells:", ncol(ne_cells), "| Genes:", nrow(ne_cells), "\n")
 
-# Prompt: NE cells RDS path
-# Loads the NE-only subset saved at the end of 09_cnv_metadata.R
-# File is named: <sample_name>_ne_cells.rds
-repeat {
-  rds_path <- trimws(readline(
-    prompt = paste0("\nEnter path to ", sample_name, "_ne_cells.rds: ")))
-  if (nchar(rds_path) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!file.exists(rds_path)) {
-    cat("File not found: '", rds_path, "'\n", sep = ""); next
-  }
-  break
+# Set default assay
+DefaultAssay(ne_cells) <- "Spatial.Polygons"
+
+# Output directory
+# All GSEA results saved to results/gsea/<sample>/
+out_dir <- file.path("results", "gsea", sample_name)
+if (!dir.exists(out_dir)) {
+  dir.create(out_dir, recursive = TRUE)
+  cat("Created output directory:", out_dir, "\n")
 }
-
-############################
-# Prompt: output directory
-############################
-# All GSEA results and CSVs will be saved here
-repeat {
-  output_dir <- trimws(readline(
-    prompt = "\nEnter output directory for GSEA results: "))
-  if (nchar(output_dir) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  break
-}
-
-if (!dir.exists(output_dir)) {
-  dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
-  cat("Created output directory:", output_dir, "\n")
-}
-
 
 # Prompt: minimum cells per subclone
 # Subclones with fewer cells than this threshold are excluded
@@ -78,13 +59,6 @@ repeat {
   }
   break
 }
-
-# Load NE cells object 
-cat("\nLoading:", rds_path, "\n")
-ne_cells <- readRDS(rds_path)
-cat("Loaded:", sample_name,
-    "| Cells:", ncol(ne_cells),
-    "| Genes:", nrow(ne_cells), "\n")
 
 # Filter valid subclones (cell counts >= min_cells)
 # Remove subclones with too few cells for reliable average expression
@@ -124,8 +98,12 @@ avg_expr_list <- AverageExpression(
   group.by = "infercnv_subclone"
 )
 
+avg_expr <- avg_expr_list[["Spatial.Polygons"]]
+cat("Average expression matrix:", nrow(avg_expr), "genes x",
+    ncol(avg_expr), "subclones\n")
+
 # Save average expression matrix for reference and QC
-avg_expr_path <- file.path(output_dir, "avg_expression_per_subclone.csv")
+avg_expr_path <- file.path(out_dir, "avg_expression_per_subclone.csv")
 write.csv(as.data.frame(avg_expr), avg_expr_path)
 cat("Saved:", avg_expr_path, "\n")
 
@@ -245,16 +223,16 @@ if (length(all_pathways) > 0) {
 
   # All pathways combined
   write.csv(combined,
-            file.path(output_dir, "gsea_all_subclones.csv"),
+            file.path(out_dir, "gsea_all_subclones.csv"),
             row.names = FALSE)
 
   # Split by direction
   write.csv(combined %>% filter(NES > 0),
-            file.path(output_dir, "gsea_activated_subclones.csv"),
+            file.path(out_dir, "gsea_activated_subclones.csv"),
             row.names = FALSE)
 
   write.csv(combined %>% filter(NES < 0),
-            file.path(output_dir, "gsea_suppressed_subclones.csv"),
+            file.path(out_dir, "gsea_suppressed_subclones.csv"),
             row.names = FALSE)
 
   cat("\nAll pathway tables saved to:", output_dir, "\n")
@@ -269,7 +247,7 @@ if (length(all_pathways) > 0) {
 }
 
 # Save full GSEA object list for downstream plotting
-gsea_rds_path <- file.path(output_dir, "gsea_subclone.rds")
+gsea_rds_path <- file.path(out_dir, "gsea_subclone.rds")
 saveRDS(gsea_subclone, gsea_rds_path)
 cat("Saved:", gsea_rds_path, "\n")
 
@@ -280,5 +258,5 @@ cat("Subclones tested:         ", ncol(avg_expr), "\n")
 cat("Subclones with pathways:  ", length(gsea_subclone), "\n")
 cat("Subclones with no result: ",
     ncol(avg_expr) - length(gsea_subclone), "\n")
-cat("Output saved to:          ", output_dir, "\n")
+cat("Output saved to:          ", out_dir, "\n")
 cat("==============================\n")
