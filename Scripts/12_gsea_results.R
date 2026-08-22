@@ -2,15 +2,20 @@
 # Purpose : Load GSEA results from 10_gsea_subclone.R, filter by
 #           p.adjust and user-defined NES threshold, generate
 #           heatmap and bubble plot, GSEA-CNV plotand save all outputs.
+# Output  : results/gsea/<sample>/
 # Requires: sample_name  (from 00_setup.R)
 #           gsea_all_subclones.csv from 10_gsea_subclone.R output
 # ─────────────────────────────────────────────────────────────────
 
+library(Seurat)
 library(tidyverse)
 library(pheatmap)
 library(RColorBrewer)
 library(tibble)
 library(scales)
+library(patchwork)
+library(clusterProfiler)
+library(org.Hs.eg.db)
 
 ########################
 # Prompt: sample name
@@ -23,39 +28,26 @@ repeat {
   break
 }
 
-# Prompt: GSEA results CSV
-# gsea_all_subclones.csv saved by 10_gsea_subclone.R
-repeat {
-  gsea_path <- trimws(readline(
-    prompt = "\nEnter path to gsea_all_subclones.csv: "))
-  if (nchar(gsea_path) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!file.exists(gsea_path)) {
-    cat("File not found: '", gsea_path, "'\n", sep = ""); next
-  }
-  break
-}
-
-# Prompt: output directory
-repeat {
-  plot_dir <- trimws(readline(
-    prompt = "\nEnter directory to save plots: "))
-  if (nchar(plot_dir) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  break
-}
-
-if (!dir.exists(plot_dir)) {
-  dir.create(plot_dir, recursive = TRUE)
-  cat("Created plot directory:", plot_dir, "\n")
-}
-
 # Load GSEA results
+# Loads directly from the fixed output path of 11_gsea_subclone.R
+gsea_path <- file.path("results", "gsea", sample_name,
+                       "gsea_all_subclones.csv")
+ 
+if (!file.exists(gsea_path)) {
+  stop("File not found: ", gsea_path,
+       "\nPlease run 11_gsea_subclone.R first.")
+}
+ 
 df_g <- read.csv(gsea_path)
 cat("\nLoaded:", nrow(df_g), "pathways across",
     n_distinct(df_g$subclone), "subclones\n")
+
+# Output directory
+# All plots saved to results/gsea/<sample>/
+out_dir <- file.path("results", "gsea", sample_name)
+if (!dir.exists(out_dir)) {
+  dir.create(out_dir, recursive = TRUE)
+}
 
 # Quick overview
 cat("\nPathways per subclone:\n")
@@ -91,13 +83,6 @@ print(summary(sig_top10$NES))
 # Only pathways with |NES| > threshold are included in the plots
 # Higher threshold = fewer, stronger pathways
 # Typical values: 1.5, 2.0, 2.5
-cat("\nNES distribution in top 10 pathways:\n")
-hist(sig_top10$NES,
-     breaks = 30,
-     main   = paste("NES distribution — top 10 per subclone |", sample_name),
-     xlab   = "NES",
-     col    = "steelblue",
-     border = "white")
 
 cat("\nPathways with |NES| above common thresholds:\n")
 for (thresh in c(1.0, 1.5, 2.0, 2.5, 3.0)) {
@@ -194,7 +179,7 @@ col_ann <- sig_1_g %>%
 col_order     <- rownames(col_ann)
 mat_direction <- mat_direction[, col_order]
 
-# ── NE type colours — dynamic ─────────────────────────────────────
+# NE type colours — dynamic
 n_ne <- n_distinct(col_ann_gsea$NE_type)
 ne_colors_gsea <- setNames(
   brewer.pal(max(n_ne, 3), "Set1")[seq_len(n_ne)],
@@ -204,7 +189,7 @@ ann_colors_gsea <- list(NE_type = ne_colors_gsea)
 
 # Plot: heatmap
 # breaks and legend_breaks both derived from nes_thresh
-heatmap_path <- file.path(plot_dir,
+heatmap_path <- file.path(out_dir,
   paste0(sample_name, "_gsea_pathway_heatmap.pdf"))
 
 pdf(heatmap_path, width = 16, height = 12)
@@ -253,7 +238,7 @@ bubble_overall <- sig_1_g %>%
       TRUE    ~ NA_character_
     )
   ) %>%
-  filter(!is.na(direction))
+  filter(!is.na(direction)) 
 
 # Order subclones by NE type then name for consistent x axis ordering
 # avoids reorder() warning when column is non-numeric
@@ -261,7 +246,7 @@ bubble_overall <- bubble_overall %>%
   mutate(subclone = factor(subclone,
                            levels = unique(subclone[order(NE_type, subclone)])))
 
-# ── Build bubble plot ─────────────────────────────────────────────
+# Build bubble plot
 # Size  = leading edge gene count (signal strength)
 # Fill  = p.adjust (red = more significant)
 # Shape = direction (triangle up = activated, down = suppressed)
@@ -308,10 +293,10 @@ p_bubble <- ggplot(bubble_overall,
     legend.title  = element_text(face = "bold")
   )
 
-# ── Save bubble plot ──────────────────────────────────────────────
+# Save bubble plot 
 # Width scales with number of subclones, height with number of pathways
 # limitsize = FALSE allows very wide plots when many subclones exist
-bubble_path <- file.path(plot_dir,
+bubble_path <- file.path(out_dir,
   paste0(sample_name, "_gsea_bubble_plot.pdf"))
 
 ggsave(
@@ -340,37 +325,28 @@ cat("==============================\n")
 #######################################
 # GSEA - CNV genes relationship analysis
 ########################################
-
-# Prompt: InferCNV CNV genes file
 # pred_cnv_genes.dat from the InferCNV HMM output directory
-repeat {
-  cnv_genes_path <- trimws(readline(
-    prompt = "\nEnter path to pred_cnv_genes.dat: "))
-  if (nchar(cnv_genes_path) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!file.exists(cnv_genes_path)) {
-    cat("File not found: '", cnv_genes_path, "'\n", sep = ""); next
-  }
-  break
+# Loaded directly from the fixed InferCNV output path
+cnv_genes_path <- file.path("results", "infercnv_output",
+                             paste0("infercnv_", sample_name),
+                             "17_HMM_predHMMi6.leiden.hmm_mode-subclusters.pred_cnv_genes.dat")
+
+if (!file.exists(cnv_genes_path)) {
+  stop("CNV genes file not found: ", cnv_genes_path,
+       "\nPlease run 08_infercnv_pipeline.R first.")
 }
 
 cnv_genes <- read.table(cnv_genes_path, header = TRUE, sep = "\t")
 cat("CNV genes loaded:", nrow(cnv_genes), "rows\n")
-head(cnv_genes)
 
-# Prompt: average expression CSV
+# Average expression CSV
 # avg_expression_per_subclone.csv saved by 10_gsea_subclone.R
-repeat {
-  avg_expr_path <- trimws(readline(
-    prompt = "\nEnter path to avg_expression_per_subclone.csv: "))
-  if (nchar(avg_expr_path) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!file.exists(avg_expr_path)) {
-    cat("File not found: '", avg_expr_path, "'\n", sep = ""); next
-  }
-  break
+avg_expr_path <- file.path("results", "gsea", sample_name,
+                           "avg_expression_per_subclone.csv")
+ 
+if (!file.exists(avg_expr_path)) {
+  stop("File not found: ", avg_expr_path,
+       "\nPlease run 11_gsea_subclone.R first.")
 }
 
 df_mar_g <- read.csv(avg_expr_path, check.names = FALSE)
@@ -557,7 +533,7 @@ p_cnv_bubble <- ggplot(all_conf,
     legend.title  = element_text(face = "bold")
   )
 
-cnv_bubble_path <- file.path(plot_dir,
+cnv_bubble_path <- file.path(out_dir,
   paste0(sample_name, "_cnv_gsea_pathway_bubble.pdf"))
 ggsave(cnv_bubble_path, p_cnv_bubble,
        width     = 50,
@@ -785,7 +761,7 @@ for (ne in ne_types_present) {
   out_width  <- max(16, n_genes    * 0.22)
   out_height <- max(8,  4 + n_pathways * 0.35)
 
-  out_path <- file.path(plot_dir,
+  out_path <- file.path(out_dir,
     paste0(sample_name, "_", ne, "_gsea_core_enrichment.png"))
 
   ggsave(
