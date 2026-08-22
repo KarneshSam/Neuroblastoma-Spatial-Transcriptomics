@@ -271,3 +271,19 @@ lrdata.uns['moranI'].loc[lrdata.var_names].sort_values(
     "I", ascending=False).to_csv(
     os.path.join(out_dir, f"{sample_name}_lr_moranI.csv"))
 print("Saved: LR Moran's I table")
+
+#################################################
+# STEP 10 — Global specificity
+#################################################
+print("\nComputing global specificity...")
+li.mt.compute_global_specificity(
+    lrdata, groupby='cell_type_hr', use_raw=False, verbose=True)
+ 
+global_int = lrdata.uns['global_interactions']
+ 
+# Intercellular only (exclude self-signalling)
+intercellular = global_int[global_int['source'] != global_int['target']]
+intercellular.sort_values("lr_mean", ascending=False).to_csv(
+    os.path.join(out_dir, f"{sample_name}_intercellular_interactions.csv"),
+    index=False)
+print("Saved: intercellular interactions CSV")
