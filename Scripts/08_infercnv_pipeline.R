@@ -153,7 +153,7 @@ cat("Normal types:", paste(normal_types, collapse = ", "), "\n")
 # Only standard chromosomes (chr1-22, X, Y) are kept
 # Duplicate gene names are removed keeping the first genomic occurrence
 cat("\nImporting GTF file — this may take a moment...\n")
-gtf <- import(gtf_path)
+gtf <- import("gencode.v44.basic.annotation.gtf.gz")
 
 cat("Building gene order file for", sample_name, "...\n")
 genes_df <- as.data.frame(gtf) |>
