@@ -334,3 +334,66 @@ chord_overall_path = os.path.join(out_dir,
 plt.savefig(chord_overall_path, dpi=300, bbox_inches="tight")
 plt.close()
 print(f"Saved: {chord_overall_path}")
+
+##################################################
+# STEP 13 — Per-subtype focused chord diagrams
+##################################################
+ 
+def plot_subtype_chord(subtype, interaction_matrix, n_partners=5,
+                       save_dir=out_dir, sample_name=sample_name):
+    """
+    Build a focused chord diagram for a given subtype and its top
+    interaction partners (combining sending and receiving strength).
+    """
+    if subtype not in interaction_matrix.index:
+        print(f"Warning: {subtype} not found in interaction_matrix. Skipping.")
+        return None
+ 
+    # Sending and receiving strength for this subtype
+    out_strength = interaction_matrix.loc[subtype]
+    in_strength  = interaction_matrix[subtype]
+ 
+    print(f"\n=== {subtype} ===")
+    print(f"{subtype} sends most strongly to:\n",
+          out_strength.sort_values(ascending=False).head(6))
+    print(f"\n{subtype} receives most strongly from:\n",
+          in_strength.sort_values(ascending=False).head(6))
+ 
+    # Combined strength, excluding self, to pick top partners
+    combined_strength = (out_strength + in_strength).drop(
+        labels=[subtype], errors="ignore")
+    top_partners = combined_strength.sort_values(
+        ascending=False).head(n_partners).index.tolist()
+    top_partners.append(subtype)  # always include the subtype itself
+ 
+    subset_matrix = interaction_matrix.loc[top_partners, top_partners]
+ 
+    circos = Circos.chord_diagram(
+        subset_matrix,
+        space=5,
+        cmap="Set2",
+        label_kws=dict(size=11, r=110),
+        link_kws=dict(ec="black", lw=0.3, direction=1),
+    )
+    fig = circos.plotfig()
+    plt.title(f"{subtype} and its strongest interaction partners — {sample_name}")
+ 
+    save_path = os.path.join(save_dir,
+        f"{sample_name}_chord_{subtype}_focused.png")
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"Saved: {save_path}")
+ 
+    return subset_matrix
+ 
+# Detect all tumour subtypes present in lrdata
+ne_subtypes = sorted([
+    ct for ct in cell_types
+    if ct.startswith(tumour_prefix)
+])
+print(f"\nTumour subtypes detected: {ne_subtypes}")
+ 
+# Generate chord diagram for each NE subtype
+for st in ne_subtypes:
+    plot_subtype_chord(st, interaction_matrix, n_partners=5)
+
