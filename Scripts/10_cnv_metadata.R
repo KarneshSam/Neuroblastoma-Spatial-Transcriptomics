@@ -3,6 +3,7 @@
 #           and arm-level CNV states to Seurat metadata, compute
 #           CNV directionality scores, plot stacked bar charts and
 #           heatmaps, and save the final annotated object.
+# Output  : results/subclone/<sample>/
 # Requires: sample_name  (from 00_setup.R)
 #           _post_cnv.rds, _cnv_chr_wide.csv, _cnv_arm_wide.csv
 #           cell_groupings from InferCNV output directory
@@ -15,104 +16,87 @@ library(tibble)
 library(ggplot2)
 library(pheatmap)
 
-####################
-# Load Sample name
-####################
-# All file paths are constructed from sample_name
-# Keep asking until a non-empty string is entered
+# Prompt: sample name
 repeat {
-  sample_name <- trimws(readline(prompt = "\nEnter sample name (e.g. P1, P2): "))
+  sample_name <- trimws(readline(prompt = "\nEnter sample name (e.g. P1, P1.B): "))
   if (nchar(sample_name) == 0) {
     cat("Sample name cannot be empty.\n"); next
   }
   break
 }
+ 
+# Load post_cnv object
+# Loads directly from the fixed output path of 09_cnv_downstream_analysis.R
+in_rds <- file.path("results", "cnv_downstream_output",
+                    paste0("infercnv_", sample_name),
+                    paste0(sample_name, "_post_cnv.rds"))
 
-# Prompt: post_cnv RDS file
-# Seurat object saved at the end of 09_cnv_downstream_analysis.R
-# Contains cnv_score and infercnv_subclone in meta.data
-repeat {
-  rds_path <- trimws(readline(
-    prompt = paste0("\nEnter path to ", sample_name, "_post_cnv.rds: ")))
-  if (nchar(rds_path) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!file.exists(rds_path)) {
-    cat("File not found: '", rds_path, "'\n", sep = ""); next
-  }
-  break
+if (!file.exists(in_rds)) {
+  stop("File not found: ", in_rds,
+       "\nPlease run 09_cnv_downstream_analysis.R first.")
 }
 
-obj <- readRDS(rds_path)
-cat("Loaded:", rds_path,
+obj <- readRDS(in_rds)
+cat("Loaded:", in_rds,
     "| Cells:", ncol(obj), "| Genes:", nrow(obj), "\n")
 
-# Prompt: chromosome-level csv file
+# Set default assay 
+DefaultAssay(obj) <- "Spatial.Polygons"
+
+# Load chromosome-level wide CSV 
 # chr_wide CSV saved by 09_cnv_downstream_analysis.R
 # Rows = subclones, columns = chromosomes, values = dominant CNV state
-repeat {
-  chr_wide_path <- trimws(readline(
-    prompt = paste0("\nEnter path to ", sample_name, "_cnv_chr_wide.csv: ")))
-  if (nchar(chr_wide_path) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!file.exists(chr_wide_path)) {
-    cat("File not found: '", chr_wide_path, "'\n", sep = ""); next
-  }
-  break
+chr_wide_path <- file.path("results", "cnv_downstream_output",
+                            paste0("infercnv_", sample_name),
+                            paste0(sample_name, "_cnv_chr_wide.csv"))
+
+if (!file.exists(chr_wide_path)) {
+  stop("File not found: ", chr_wide_path,
+       "\nPlease run 09_cnv_downstream_analysis.R first.")
 }
 
 chr_wide <- read.csv(chr_wide_path, check.names = FALSE)
 cat("Loaded chr_wide:", nrow(chr_wide), "subclones x",
     ncol(chr_wide) - 1, "chromosomes\n")
 
-# Prompt: arm-level csv file 
+# Load arm-level wide CSV 
 # arm_wide CSV saved by 09_cnv_downstream_analysis.R
 # Rows = subclones, columns = chromosome arms, values = dominant CNV state
-repeat {
-  arm_wide_path <- trimws(readline(
-    prompt = paste0("\nEnter path to ", sample_name, "_cnv_arm_wide.csv: ")))
-  if (nchar(arm_wide_path) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!file.exists(arm_wide_path)) {
-    cat("File not found: '", arm_wide_path, "'\n", sep = ""); next
-  }
-  break
+arm_wide_path <- file.path("results", "cnv_downstream_output",
+                            paste0("infercnv_", sample_name),
+                            paste0(sample_name, "_cnv_arm_wide.csv"))
+
+if (!file.exists(arm_wide_path)) {
+  stop("File not found: ", arm_wide_path,
+       "\nPlease run 09_cnv_downstream_analysis.R first.")
 }
 
 arm_wide <- read.csv(arm_wide_path, check.names = FALSE)
 cat("Loaded arm_wide:", nrow(arm_wide), "subclones x",
     ncol(arm_wide) - 1, "arms\n")
 
-# Prompt: InferCNV output directory
+# Set InferCNV output directory
 # Needed to reload cell_groupings (cell barcode -> subclone mapping)
-repeat {
-  infercnv_dir <- trimws(readline(
-    prompt = "\nEnter InferCNV output directory path: "))
-  if (nchar(infercnv_dir) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  if (!dir.exists(infercnv_dir)) {
-    cat("Directory not found: '", infercnv_dir, "'\n", sep = ""); next
-  }
-  break
+infercnv_dir <- file.path("results", "infercnv_output",
+                           paste0("infercnv_", sample_name))
+
+if (!dir.exists(infercnv_dir)) {
+  stop("InferCNV directory not found: ", infercnv_dir,
+       "\nPlease run 08_infercnv_pipeline.R first.")
 }
 
-# Prompt: plot output directory
-repeat {
-  plot_dir <- trimws(readline(
-    prompt = "\nEnter directory to save plots: "))
-  if (nchar(plot_dir) == 0) {
-    cat("Path cannot be empty.\n"); next
-  }
-  break
+cat("Loading cell groupings from:", infercnv_dir, "\n")
+
+# Set output directory
+# All outputs saved to results/subclone/<sample>/
+out_dir <- file.path("results", "subclone", sample_name)
+
+if (!dir.exists(out_dir)) {
+  dir.create(out_dir, recursive = TRUE)
+  cat("Created directory:", out_dir, "\n")
 }
 
-if (!dir.exists(plot_dir)) {
-  dir.create(plot_dir, recursive = TRUE)
-  cat("Created plot directory:", plot_dir, "\n")
-}
+cat("Outputs will be saved to:", out_dir, "\n")
 
 # Prompt: tumour cell type prefix
 # Used to filter meta.data to tumour cells for proportion plots
@@ -266,7 +250,7 @@ p_chr_bar <- state_prop_all %>%
                      "per chromosome —", sample_name)) +
   theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14))
 
-chr_bar_path <- file.path(plot_dir,
+chr_bar_path <- file.path(out_dir,
   paste0(sample_name, "_cnv_chr_state_barplot.pdf"))
 ggsave(chr_bar_path, p_chr_bar, width = 16, height = 10)
 cat("Saved:", chr_bar_path, "\n")
@@ -379,7 +363,7 @@ p_arm_bar <- arm_prop_all %>%
                      "per chromosome arm —", sample_name)) +
   theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 14))
 
-arm_bar_path <- file.path(plot_dir,
+arm_bar_path <- file.path(out_dir,
   paste0(sample_name, "_cnv_arm_state_barplot.pdf"))
 ggsave(arm_bar_path, p_arm_bar, width = 18, height = 12)
 cat("Saved:", arm_bar_path, "\n")
@@ -423,7 +407,7 @@ arm_order_all <- arm_order_all[arm_order_all %in% colnames(score_wide_all)]
 score_wide_all <- score_wide_all[tumour_types, arm_order_all]
 
 # Plot: directionality heatmap — all arms
-all_arms_heatmap_path <- file.path(plot_dir,
+all_arms_heatmap_path <- file.path(out_dir,
   paste0(sample_name, "_cnv_directionality_all_arms.pdf"))
  
 pdf(all_arms_heatmap_path, width = 16, height = 6)
@@ -505,7 +489,7 @@ score_wide <- score_wide[tumour_types,
 ]
 
 # Plot: directionality heatmap — classic arms
-classic_heatmap_path <- file.path(plot_dir,
+classic_heatmap_path <- file.path(out_dir,
   paste0(sample_name, "_cnv_directionality_classic_arms.pdf"))
 
 pdf(classic_heatmap_path, width = 10, height = 6)
@@ -538,7 +522,7 @@ cat("Saved:", classic_heatmap_path, "\n")
 #   - chr1p, chr1q ...   : per-cell arm-level CNV state
 obj <- UpdateSeuratObject(obj)
 
-out_rds <- paste0(sample_name, "_post_cnv_meta.rds")
+out_rds <- file.path(out_dir, paste0(sample_name, "_post_cnv_meta.rds"))
 saveRDS(obj, file = out_rds)
 cat("Saved:", out_rds, "\n")
 
@@ -551,9 +535,10 @@ cat("NE cells subset:", ncol(ne_cells), "cells |",
     nrow(ne_cells), "genes\n")
 
 # Save NE cells subset
-ne_rds <- paste0(sample_name, "_ne_cells.rds")
+ne_rds <- file.path(out_dir, paste0(sample_name, "_ne_cells.rds"))
 saveRDS(ne_cells, file = ne_rds)
 cat("Saved:", ne_rds, "\n")
 
+cat("\nAll outputs saved to:", out_dir, "\n")
 cat("Pipeline complete for", sample_name, "\n")
 
