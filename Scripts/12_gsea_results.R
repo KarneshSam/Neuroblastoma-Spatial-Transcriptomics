@@ -319,7 +319,7 @@ cat("After top 10 per clone: ", nrow(sig_top10), "\n")
 cat("After |NES| >", nes_thresh, ":  ", nrow(sig_1_g), "\n")
 cat("Activated:               ", sum(sig_1_g$direction == "Activated"), "\n")
 cat("Suppressed:              ", sum(sig_1_g$direction == "Suppressed"), "\n")
-cat("Plots saved to:          ", plot_dir, "\n")
+cat("Plots saved to:          ", out_dir, "\n")
 cat("==============================\n")
 
 #######################################
@@ -777,5 +777,5 @@ for (ne in ne_types_present) {
   cat(ne, "saved:", out_width, "x", out_height, "in ->", out_path, "\n")
 }
 
-cat("\nAll plots saved to:", plot_dir, "\n")
+cat("\nAll plots saved to:", out_dir, "\n")
 cat("Analysis complete for", sample_name, "\n")
