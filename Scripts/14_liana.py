@@ -397,3 +397,40 @@ print(f"\nTumour subtypes detected: {ne_subtypes}")
 for st in ne_subtypes:
     plot_subtype_chord(st, interaction_matrix, n_partners=5)
 
+##################################################
+# STEP 14 — Dotplots per NE subtype
+##################################################
+print("\nGenerating dotplots per NE subtype...")
+ 
+# Non-NE cell types for use as target labels
+non_ne_types = [ct for ct in cell_types if not ct.startswith(tumour_prefix)]
+ 
+for source_ne in ne_subtypes:
+ 
+    # All other cell types as targets
+    target_labels = [ct for ct in cell_types if ct != source_ne]
+ 
+    try:
+        p = li.pl.dotplot(
+            adata=lrdata,
+            colour="lr_mean",
+            size='pval',
+            source_labels=[source_ne],
+            target_labels=target_labels,
+            filter_fun=lambda x: x['lr_mean'] > lr_threshold,
+            inverse_size=True,
+            figure_size=(12, 8),
+            uns_key='global_interactions'
+        )
+ 
+        # Save dotplot
+        dotplot_path = os.path.join(out_dir,
+            f"{sample_name}_dotplot_{source_ne}.pdf")
+        p.save(dotplot_path, dpi=300)
+        print(f"Saved: {dotplot_path}")
+ 
+    except Exception as e:
+        print(f"Warning: dotplot failed for {source_ne} — {e}")
+ 
+print(f"\nLIANA+ analysis complete for {sample_name}")
+print(f"All outputs saved to: {out_dir}")
