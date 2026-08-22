@@ -258,3 +258,16 @@ lrdata.uns['global_interactions'].to_csv(
     index=False)
 print("Saved: LR interactions CSV")
 
+##################################################
+# STEP 9 — Moran's I on LR interactions
+##################################################
+svis = lrdata.uns['moranI'].index[
+    (lrdata.uns['moranI']['pval_norm_fdr_bh'] <= 0.05) &
+    (lrdata.uns['moranI']['I'] > 0.01)
+]
+print(f"\nSpatially variable LR interactions: {len(svis)}")
+ 
+lrdata.uns['moranI'].loc[lrdata.var_names].sort_values(
+    "I", ascending=False).to_csv(
+    os.path.join(out_dir, f"{sample_name}_lr_moranI.csv"))
+print("Saved: LR Moran's I table")
